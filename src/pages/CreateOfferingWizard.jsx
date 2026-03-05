@@ -854,32 +854,198 @@ export default function CreateOfferingWizard({ isAddon = false }) {
           Add each metered resource customers will be billed for. Each gets its own rate.
         </p>
 
-        {/* Display saved rate cards - keep them editable */}
+        {/* Display saved rate cards - fully editable with same UI as editing card */}
         {state.rateCards.map((card, cardIndex) => {
           const [serviceId, featureSlug] = card.feature.split('_')
           const service = SERVICES.find(s => s.id === serviceId)
           const feature = SERVICE_FEATURES[serviceId]?.find(f => f.slug === featureSlug)
           return (
-            <div key={cardIndex} className="border border-g-200 rounded p-5 bg-white mb-4">
-              <div className="flex items-center justify-between mb-5">
-                <div className="text-sm font-medium text-g-900">{feature?.name}</div>
+            <div key={cardIndex} className="border border-g-200 rounded bg-white mb-4 overflow-hidden">
+              {/* Collapsible header with feature selector */}
+              <div className="p-4 flex items-center gap-3">
+                <select
+                  value={card.feature || ''}
+                  onChange={(e) => {
+                    const updatedCards = [...state.rateCards]
+                    updatedCards[cardIndex] = {
+                      ...card,
+                      feature: e.target.value,
+                      pricingModel: '',
+                      perUnitPrice: '',
+                      blockSize: '',
+                      blockPrice: '',
+                      tiers: null
+                    }
+                    dispatch({ type: 'SET_RATE_CARDS', cards: updatedCards })
+                  }}
+                  className="flex-1 text-base font-medium text-g-900 bg-transparent border-none outline-none cursor-pointer appearance-none pr-8"
+                  style={{ backgroundImage: 'none' }}
+                >
+                  <option value="">Select a metered resource...</option>
+                  {SERVICES.map(service => {
+                    const features = (SERVICE_FEATURES[service.id] || []).filter(f => f.metering === 'aggregated')
+                    if (features.length === 0) return null
+                    return (
+                      <optgroup key={service.id} label={service.name}>
+                        {features.map(feature => (
+                          <option key={`${service.id}_${feature.slug}`} value={`${service.id}_${feature.slug}`}>
+                            {feature.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )
+                  })}
+                </select>
+                <svg className="w-5 h-5 text-g-400 flex-shrink-0 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
                 <button
                   onClick={() => dispatch({ type: 'REMOVE_RATE_CARD', index: cardIndex })}
-                  className="w-7 h-7 border border-g-200 rounded flex items-center justify-center text-g-400 hover:border-g-300 hover:text-g-700"
+                  className="w-6 h-6 flex items-center justify-center text-g-400 hover:text-g-700 flex-shrink-0"
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="mb-4">
-                <div className="text-xs font-semibold text-g-500 uppercase tracking-wider mb-2">Pricing Model</div>
-                <div className="text-sm text-g-700">
-                  {card.pricingModel === 'per-unit' && 'Flat per-unit'}
-                  {card.pricingModel === 'block' && 'Block'}
-                  {card.pricingModel === 'graduated' && 'Graduated'}
-                  {card.pricingModel === 'volume' && 'Volume'}
+              <div className="px-4 pb-4 border-t border-g-200 pt-4">
+                <label className="block text-xs font-semibold text-g-500 uppercase tracking-wider mb-3">Pricing Model</label>
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                  <button
+                    onClick={() => {
+                      const updatedCards = [...state.rateCards]
+                      updatedCards[cardIndex] = { ...card, pricingModel: 'per-unit', tiers: null }
+                      dispatch({ type: 'SET_RATE_CARDS', cards: updatedCards })
+                    }}
+                    className={`relative p-4 border rounded text-left transition-all ${
+                      card.pricingModel === 'per-unit'
+                        ? 'border-blue bg-blue-light/20'
+                        : 'border-g-200 hover:border-g-300'
+                    }`}
+                  >
+                    {card.pricingModel === 'per-unit' && (
+                      <div className="absolute top-2 right-2 w-5 h-5 bg-blue rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="flex gap-0.5 mb-3 h-8 items-end">
+                      {[8, 8, 8, 8, 8].map((h, i) => (
+                        <div key={i} className={`w-4 rounded-sm ${card.pricingModel === 'per-unit' ? 'bg-blue' : 'bg-g-400'}`} style={{ height: `${h * 3}px` }} />
+                      ))}
+                    </div>
+                    <div className="font-medium text-sm text-g-900 mb-1">Flat per-unit</div>
+                    <div className="text-xs text-g-500">Same price for every unit.</div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const updatedCards = [...state.rateCards]
+                      updatedCards[cardIndex] = { ...card, pricingModel: 'block', tiers: null }
+                      dispatch({ type: 'SET_RATE_CARDS', cards: updatedCards })
+                    }}
+                    className={`relative p-4 border rounded text-left transition-all ${
+                      card.pricingModel === 'block'
+                        ? 'border-blue bg-blue-light/20'
+                        : 'border-g-200 hover:border-g-300'
+                    }`}
+                  >
+                    {card.pricingModel === 'block' && (
+                      <div className="absolute top-2 right-2 w-5 h-5 bg-blue rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="flex gap-1 mb-3 h-8 items-end">
+                      <div className={`flex gap-0.5 ${card.pricingModel === 'block' ? 'opacity-100' : 'opacity-60'}`}>
+                        <div className={`w-3 rounded-sm ${card.pricingModel === 'block' ? 'bg-blue' : 'bg-g-400'}`} style={{ height: '16px' }} />
+                        <div className={`w-3 rounded-sm ${card.pricingModel === 'block' ? 'bg-blue' : 'bg-g-400'}`} style={{ height: '16px' }} />
+                      </div>
+                      <div className={`flex gap-0.5 ${card.pricingModel === 'block' ? 'opacity-100' : 'opacity-40'}`}>
+                        <div className={`w-3 rounded-sm ${card.pricingModel === 'block' ? 'bg-blue' : 'bg-g-300'}`} style={{ height: '24px' }} />
+                        <div className={`w-3 rounded-sm ${card.pricingModel === 'block' ? 'bg-blue' : 'bg-g-300'}`} style={{ height: '24px' }} />
+                      </div>
+                    </div>
+                    <div className="font-medium text-sm text-g-900 mb-1">Block</div>
+                    <div className="text-xs text-g-500">Fixed price per chunk of N units.</div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const updatedCards = [...state.rateCards]
+                      updatedCards[cardIndex] = {
+                        ...card,
+                        pricingModel: 'graduated',
+                        tiers: [
+                          { from: 0, to: 1000, perUnit: '', fixedFee: '' },
+                          { from: 1001, to: Infinity, perUnit: '', fixedFee: '' }
+                        ]
+                      }
+                      dispatch({ type: 'SET_RATE_CARDS', cards: updatedCards })
+                    }}
+                    className={`relative p-4 border rounded text-left transition-all ${
+                      card.pricingModel === 'graduated'
+                        ? 'border-blue bg-blue-light/20'
+                        : 'border-g-200 hover:border-g-300'
+                    }`}
+                  >
+                    {card.pricingModel === 'graduated' && (
+                      <div className="absolute top-2 right-2 w-5 h-5 bg-blue rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="flex gap-0.5 mb-3 h-8 items-end">
+                      {[4, 5, 6, 7, 8].map((h, i) => (
+                        <div key={i} className={`w-4 rounded-sm ${card.pricingModel === 'graduated' ? 'bg-blue' : 'bg-g-400'}`} style={{ height: `${h * 3}px` }} />
+                      ))}
+                    </div>
+                    <div className="font-medium text-sm text-g-900 mb-1">Graduated</div>
+                    <div className="text-xs text-g-500">Each unit priced at its tier's rate.</div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const updatedCards = [...state.rateCards]
+                      updatedCards[cardIndex] = {
+                        ...card,
+                        pricingModel: 'volume',
+                        tiers: [
+                          { from: 0, to: 1000, perUnit: '', fixedFee: '' },
+                          { from: 1001, to: Infinity, perUnit: '', fixedFee: '' }
+                        ]
+                      }
+                      dispatch({ type: 'SET_RATE_CARDS', cards: updatedCards })
+                    }}
+                    className={`relative p-4 border rounded text-left transition-all ${
+                      card.pricingModel === 'volume'
+                        ? 'border-blue bg-blue-light/20'
+                        : 'border-g-200 hover:border-g-300'
+                    }`}
+                  >
+                    {card.pricingModel === 'volume' && (
+                      <div className="absolute top-2 right-2 w-5 h-5 bg-blue rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="flex gap-1 mb-3 h-8 items-end">
+                      <div className={`flex gap-0.5 ${card.pricingModel === 'volume' ? 'opacity-100' : 'opacity-60'}`}>
+                        <div className={`w-3 rounded-sm ${card.pricingModel === 'volume' ? 'bg-blue' : 'bg-g-400'}`} style={{ height: '16px' }} />
+                        <div className={`w-3 rounded-sm ${card.pricingModel === 'volume' ? 'bg-blue' : 'bg-g-400'}`} style={{ height: '16px' }} />
+                      </div>
+                      <div className={`flex gap-0.5 ${card.pricingModel === 'volume' ? 'opacity-100' : 'opacity-40'}`}>
+                        <div className={`w-3 rounded-sm ${card.pricingModel === 'volume' ? 'bg-blue' : 'bg-g-300'}`} style={{ height: '24px' }} />
+                        <div className={`w-3 rounded-sm ${card.pricingModel === 'volume' ? 'bg-blue' : 'bg-g-300'}`} style={{ height: '24px' }} />
+                      </div>
+                    </div>
+                    <div className="font-medium text-sm text-g-900 mb-1">Volume</div>
+                    <div className="text-xs text-g-500">All units priced at the tier you land in.</div>
+                  </button>
                 </div>
-              </div>
 
               {card.pricingModel === 'per-unit' && (
                 <div>
