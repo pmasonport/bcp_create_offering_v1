@@ -56,6 +56,8 @@ function reducer(state, action) {
       }
     case 'ADD_RATE_CARD':
       return { ...state, rateCards: [...state.rateCards, action.card] }
+    case 'SET_RATE_CARDS':
+      return { ...state, rateCards: action.cards }
     case 'UPDATE_RATE_CARD':
       return {
         ...state,
@@ -771,98 +773,468 @@ export default function CreateOfferingWizard({ isAddon = false }) {
   )
 
   // Render Step 2: Pricing (split into multiple functions due to size)
-  const renderPaygConfig = () => (
-    <div className="mb-6 p-5 border border-g-200 rounded bg-white">
-      <h4 className="text-sm font-semibold text-g-900 mb-4">Configure Usage-Based Pricing</h4>
-      <p className="text-xs text-g-500 mb-4">
-        Add a rate card for each metered resource you want to charge for. Most add-ons have 1-3 rate cards.
-      </p>
+  const renderPaygConfig = () => {
+    // If no rate cards and no editing card, show empty state with add button
+    const showingCards = state.rateCards.length > 0 || editingCard.feature
 
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-g-700 mb-3">Pricing model</label>
-        <p className="text-xs text-g-500 mb-3">How should usage be charged?</p>
-        <div className="grid grid-cols-4 gap-2">
-            {['per-unit', 'block', 'graduated', 'volume'].map(model => (
-              <button
-                key={model}
-                onClick={() => setEditingCard({ ...editingCard, pricingModel: model })}
-                className={`p-3 border rounded text-xs font-medium transition-all ${
-                  editingCard.pricingModel === model
-                    ? 'border-blue bg-blue-light text-blue'
-                    : 'border-g-200 bg-white text-g-600 hover:bg-g-50'
-                }`}
-              >
-                <div className="mb-1 text-base">{model === 'per-unit' && '▌▌▌▌'}{model === 'block' && '▌▌ ▌▌'}{model === 'graduated' && '▌ ▌ ▌'}{model === 'volume' && '▌▌ ▌▌'}</div>
-                <div>{model.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</div>
-              </button>
-            ))}
-          </div>
-        </div>
+    const addNewCard = () => {
+      // If currently editing, save it first
+      if (editingCard.feature && editingCard.pricingModel) {
+        addRateCard()
+      }
+      // Reset editing card
+      setEditingCard({
+        feature: '',
+        pricingModel: '',
+        perUnitPrice: '',
+        blockSize: '',
+        blockPrice: '',
+        tiers: null,
+        billingTiming: 'arrears'
+      })
+    }
 
-      {editingCard.pricingModel === 'per-unit' && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-g-700 mb-1.5">Price per unit</label>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-g-500">$</span>
-            <input
-              type="number"
-              step="0.001"
-              value={editingCard.perUnitPrice}
-              onChange={(e) => setEditingCard({ ...editingCard, perUnitPrice: e.target.value })}
-              placeholder="0.00"
-              className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
-            />
-          </div>
-        </div>
-      )}
+    const addTier = () => {
+      const tiers = editingCard.tiers || []
+      const lastTier = tiers[tiers.length - 1]
+      const newFrom = lastTier.to === Infinity ? lastTier.from + 1000 : lastTier.to + 1
 
-      {editingCard.pricingModel === 'block' && (
-        <>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-g-700 mb-1.5">Block size</label>
-            <input
-              type="number"
-              value={editingCard.blockSize}
-              onChange={(e) => setEditingCard({ ...editingCard, blockSize: e.target.value })}
-              placeholder="500"
-              className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-g-700 mb-1.5">Price per block</label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-g-500">$</span>
-              <input
-                type="number"
-                step="0.01"
-                value={editingCard.blockPrice}
-                onChange={(e) => setEditingCard({ ...editingCard, blockPrice: e.target.value })}
-                placeholder="25.00"
-                className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
-              />
+      const updatedTiers = [...tiers]
+      if (lastTier.to === Infinity) {
+        updatedTiers[updatedTiers.length - 1] = { ...lastTier, to: newFrom - 1 }
+      }
+
+      updatedTiers.push({ from: newFrom, to: Infinity, perUnit: '', fixedFee: '' })
+      setEditingCard({ ...editingCard, tiers: updatedTiers })
+    }
+
+    const updateTier = (tierIndex, field, value) => {
+      const tiers = [...editingCard.tiers]
+      tiers[tierIndex] = { ...tiers[tierIndex], [field]: value }
+      setEditingCard({ ...editingCard, tiers })
+    }
+
+    const selectedFeature = editingCard.feature ? (() => {
+      const [serviceId, featureSlug] = editingCard.feature.split('_')
+      const service = SERVICES.find(s => s.id === serviceId)
+      const feature = SERVICE_FEATURES[serviceId]?.find(f => f.slug === featureSlug)
+      return { service, feature }
+    })() : null
+
+    return (
+      <div>
+        <h4 className="text-xs font-semibold text-g-500 uppercase tracking-wider mb-2">Metered Resources</h4>
+        <p className="text-sm text-g-500 mb-5">
+          Add each metered resource customers will be billed for. Each gets its own rate.
+        </p>
+
+        {/* Display saved rate cards - keep them editable */}
+        {state.rateCards.map((card, cardIndex) => {
+          const [serviceId, featureSlug] = card.feature.split('_')
+          const service = SERVICES.find(s => s.id === serviceId)
+          const feature = SERVICE_FEATURES[serviceId]?.find(f => f.slug === featureSlug)
+          return (
+            <div key={cardIndex} className="border border-g-200 rounded p-5 bg-white mb-4">
+              <div className="flex items-center justify-between mb-5">
+                <div className="text-sm font-medium text-g-900">{feature?.name}</div>
+                <button
+                  onClick={() => dispatch({ type: 'REMOVE_RATE_CARD', index: cardIndex })}
+                  className="w-7 h-7 border border-g-200 rounded flex items-center justify-center text-g-400 hover:border-g-300 hover:text-g-700"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <div className="text-xs font-semibold text-g-500 uppercase tracking-wider mb-2">Pricing Model</div>
+                <div className="text-sm text-g-700">
+                  {card.pricingModel === 'per-unit' && 'Flat per-unit'}
+                  {card.pricingModel === 'block' && 'Block'}
+                  {card.pricingModel === 'graduated' && 'Graduated'}
+                  {card.pricingModel === 'volume' && 'Volume'}
+                </div>
+              </div>
+
+              {card.pricingModel === 'per-unit' && (
+                <div>
+                  <label className="block text-sm font-medium text-g-700 mb-1.5">
+                    Price per {feature?.name?.toLowerCase() || 'unit'}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-g-500">$</span>
+                    <input
+                      type="number"
+                      step="0.001"
+                      value={card.perUnitPrice || ''}
+                      onChange={(e) => {
+                        const updatedCards = [...state.rateCards]
+                        updatedCards[cardIndex] = { ...card, perUnitPrice: e.target.value }
+                        dispatch({ type: 'SET_RATE_CARDS', cards: updatedCards })
+                      }}
+                      className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {card.pricingModel === 'block' && (
+                <>
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-g-700 mb-1.5">Block size</label>
+                    <input
+                      type="number"
+                      value={card.blockSize || ''}
+                      onChange={(e) => {
+                        const updatedCards = [...state.rateCards]
+                        updatedCards[cardIndex] = { ...card, blockSize: e.target.value }
+                        dispatch({ type: 'SET_RATE_CARDS', cards: updatedCards })
+                      }}
+                      className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-g-700 mb-1.5">Price per block</label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-g-500">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={card.blockPrice || ''}
+                        onChange={(e) => {
+                          const updatedCards = [...state.rateCards]
+                          updatedCards[cardIndex] = { ...card, blockPrice: e.target.value }
+                          dispatch({ type: 'SET_RATE_CARDS', cards: updatedCards })
+                        }}
+                        className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {(card.pricingModel === 'graduated' || card.pricingModel === 'volume') && card.tiers && (
+                <div>
+                  <div className="bg-white border border-g-200 rounded overflow-hidden mb-3">
+                    <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-g-50 border-b border-g-200 text-xs font-semibold text-g-500 uppercase tracking-wider">
+                      <div className="col-span-2">From</div>
+                      <div className="col-span-2">To</div>
+                      <div className="col-span-4">Per Unit</div>
+                      <div className="col-span-4">Fixed Fee</div>
+                    </div>
+                    {card.tiers.map((tier, tierIndex) => (
+                      <div key={tierIndex} className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-g-200 last:border-b-0">
+                        <div className="col-span-2 flex items-center text-sm text-g-600">
+                          {tier.from.toLocaleString('en-US')}
+                        </div>
+                        <div className="col-span-2 flex items-center">
+                          {tierIndex === card.tiers.length - 1 ? (
+                            <span className="text-sm text-g-600">∞</span>
+                          ) : (
+                            <input
+                              type="number"
+                              value={tier.to === Infinity ? '' : tier.to}
+                              onChange={(e) => {
+                                const updatedCards = [...state.rateCards]
+                                const tiers = [...updatedCards[cardIndex].tiers]
+                                tiers[tierIndex] = { ...tiers[tierIndex], to: parseInt(e.target.value) || '' }
+                                updatedCards[cardIndex] = { ...updatedCards[cardIndex], tiers }
+                                dispatch({ type: 'SET_RATE_CARDS', cards: updatedCards })
+                              }}
+                              className="w-full px-2 py-1.5 border border-g-200 rounded text-sm"
+                            />
+                          )}
+                        </div>
+                        <div className="col-span-4">
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-g-500">$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={tier.perUnit || ''}
+                              onChange={(e) => {
+                                const updatedCards = [...state.rateCards]
+                                const tiers = [...updatedCards[cardIndex].tiers]
+                                tiers[tierIndex] = { ...tiers[tierIndex], perUnit: e.target.value }
+                                updatedCards[cardIndex] = { ...updatedCards[cardIndex], tiers }
+                                dispatch({ type: 'SET_RATE_CARDS', cards: updatedCards })
+                              }}
+                              placeholder="0.00"
+                              className="w-full px-2 py-1.5 border border-g-200 rounded text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div className="col-span-4">
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-g-500">$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={tier.fixedFee || ''}
+                              onChange={(e) => {
+                                const updatedCards = [...state.rateCards]
+                                const tiers = [...updatedCards[cardIndex].tiers]
+                                tiers[tierIndex] = { ...tiers[tierIndex], fixedFee: e.target.value }
+                                updatedCards[cardIndex] = { ...updatedCards[cardIndex], tiers }
+                                dispatch({ type: 'SET_RATE_CARDS', cards: updatedCards })
+                              }}
+                              placeholder="—"
+                              className="w-full px-2 py-1.5 border border-g-200 rounded text-sm"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => {
+                      const updatedCards = [...state.rateCards]
+                      const tiers = updatedCards[cardIndex].tiers || []
+                      const lastTier = tiers[tiers.length - 1]
+                      const newFrom = lastTier.to === Infinity ? lastTier.from + 1000 : lastTier.to + 1
+                      const updatedTiers = [...tiers]
+                      if (lastTier.to === Infinity) {
+                        updatedTiers[updatedTiers.length - 1] = { ...lastTier, to: newFrom - 1 }
+                      }
+                      updatedTiers.push({ from: newFrom, to: Infinity, perUnit: '', fixedFee: '' })
+                      updatedCards[cardIndex] = { ...updatedCards[cardIndex], tiers: updatedTiers }
+                      dispatch({ type: 'SET_RATE_CARDS', cards: updatedCards })
+                    }}
+                    className="text-sm text-blue hover:underline"
+                  >
+                    + Add tier
+                  </button>
+                </div>
+              )}
             </div>
+          )
+        })}
+
+        {/* Current editing card */}
+        <div className="border border-g-200 rounded p-5 bg-white mb-4">
+          <div className="flex items-start gap-3 mb-5">
+            <select
+              value={editingCard.feature || ''}
+              onChange={(e) => {
+                setEditingCard({
+                  feature: e.target.value,
+                  pricingModel: '',
+                  perUnitPrice: '',
+                  blockSize: '',
+                  blockPrice: '',
+                  tiers: null,
+                  billingTiming: 'arrears'
+                })
+              }}
+              className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm bg-white"
+            >
+              <option value="">Select a metered resource...</option>
+              {SERVICES.map(service => {
+                const features = (SERVICE_FEATURES[service.id] || []).filter(f => f.metering === 'aggregated')
+                if (features.length === 0) return null
+                return (
+                  <optgroup key={service.id} label={service.name}>
+                    {features.map(feature => (
+                      <option key={`${service.id}_${feature.slug}`} value={`${service.id}_${feature.slug}`}>
+                        {feature.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )
+              })}
+            </select>
           </div>
-        </>
-      )}
 
-      {(editingCard.pricingModel === 'graduated' || editingCard.pricingModel === 'volume') && (
-        <div className="mb-4">
-          <TierBuilder
-            tiers={editingCard.tiers}
-            onChange={(tiers) => setEditingCard({ ...editingCard, tiers })}
-          />
+          {editingCard.feature && (
+            <>
+              <label className="block text-xs font-semibold text-g-500 uppercase tracking-wider mb-3">Pricing Model</label>
+              <div className="grid grid-cols-2 gap-2.5 mb-5">
+                <button
+                  onClick={() => setEditingCard({ ...editingCard, pricingModel: 'per-unit', tiers: null })}
+                  className={`p-4 border rounded text-left transition-all ${
+                    editingCard.pricingModel === 'per-unit'
+                      ? 'border-blue bg-blue-light/20'
+                      : 'border-g-200 hover:border-g-300'
+                  }`}
+                >
+                  <div className="font-medium text-sm text-g-900 mb-1">Flat per-unit</div>
+                  <div className="text-xs text-g-500">Same price for every unit</div>
+                </button>
+
+                <button
+                  onClick={() => setEditingCard({ ...editingCard, pricingModel: 'block', tiers: null })}
+                  className={`p-4 border rounded text-left transition-all ${
+                    editingCard.pricingModel === 'block'
+                      ? 'border-blue bg-blue-light/20'
+                      : 'border-g-200 hover:border-g-300'
+                  }`}
+                >
+                  <div className="font-medium text-sm text-g-900 mb-1">Block</div>
+                  <div className="text-xs text-g-500">Fixed price per chunk of N units</div>
+                </button>
+
+                <button
+                  onClick={() => setEditingCard({
+                    ...editingCard,
+                    pricingModel: 'graduated',
+                    tiers: [
+                      { from: 0, to: 1000, perUnit: '', fixedFee: '' },
+                      { from: 1001, to: Infinity, perUnit: '', fixedFee: '' }
+                    ]
+                  })}
+                  className={`p-4 border rounded text-left transition-all ${
+                    editingCard.pricingModel === 'graduated'
+                      ? 'border-blue bg-blue-light/20'
+                      : 'border-g-200 hover:border-g-300'
+                  }`}
+                >
+                  <div className="font-medium text-sm text-g-900 mb-1">Graduated</div>
+                  <div className="text-xs text-g-500">Each unit priced at its tier's rate</div>
+                </button>
+
+                <button
+                  onClick={() => setEditingCard({
+                    ...editingCard,
+                    pricingModel: 'volume',
+                    tiers: [
+                      { from: 0, to: 1000, perUnit: '', fixedFee: '' },
+                      { from: 1001, to: Infinity, perUnit: '', fixedFee: '' }
+                    ]
+                  })}
+                  className={`p-4 border rounded text-left transition-all ${
+                    editingCard.pricingModel === 'volume'
+                      ? 'border-blue bg-blue-light/20'
+                      : 'border-g-200 hover:border-g-300'
+                  }`}
+                >
+                  <div className="font-medium text-sm text-g-900 mb-1">Volume</div>
+                  <div className="text-xs text-g-500">All units priced at the tier you land in</div>
+                </button>
+              </div>
+
+              {editingCard.pricingModel === 'per-unit' && (
+                <div>
+                  <label className="block text-sm font-medium text-g-700 mb-1.5">
+                    Price per {selectedFeature?.feature?.name?.toLowerCase() || 'unit'}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-g-500">$</span>
+                    <input
+                      type="number"
+                      step="0.001"
+                      value={editingCard.perUnitPrice || ''}
+                      onChange={(e) => setEditingCard({ ...editingCard, perUnitPrice: e.target.value })}
+                      placeholder="0.00"
+                      className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {editingCard.pricingModel === 'block' && (
+                <>
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-g-700 mb-1.5">Block size</label>
+                    <input
+                      type="number"
+                      value={editingCard.blockSize || ''}
+                      onChange={(e) => setEditingCard({ ...editingCard, blockSize: e.target.value })}
+                      placeholder="1000"
+                      className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-g-700 mb-1.5">Price per block</label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-g-500">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editingCard.blockPrice || ''}
+                        onChange={(e) => setEditingCard({ ...editingCard, blockPrice: e.target.value })}
+                        placeholder="50.00"
+                        className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {(editingCard.pricingModel === 'graduated' || editingCard.pricingModel === 'volume') && editingCard.tiers && (
+                <div>
+                  <div className="bg-white border border-g-200 rounded overflow-hidden mb-3">
+                    <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-g-50 border-b border-g-200 text-xs font-semibold text-g-500 uppercase tracking-wider">
+                      <div className="col-span-2">From</div>
+                      <div className="col-span-2">To</div>
+                      <div className="col-span-4">Per Unit</div>
+                      <div className="col-span-4">Fixed Fee</div>
+                    </div>
+                    {editingCard.tiers.map((tier, tierIndex) => (
+                      <div key={tierIndex} className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-g-200 last:border-b-0">
+                        <div className="col-span-2 flex items-center text-sm text-g-600">
+                          {tier.from.toLocaleString('en-US')}
+                        </div>
+                        <div className="col-span-2 flex items-center">
+                          {tierIndex === editingCard.tiers.length - 1 ? (
+                            <span className="text-sm text-g-600">∞</span>
+                          ) : (
+                            <input
+                              type="number"
+                              value={tier.to === Infinity ? '' : tier.to}
+                              onChange={(e) => updateTier(tierIndex, 'to', parseInt(e.target.value) || '')}
+                              className="w-full px-2 py-1.5 border border-g-200 rounded text-sm"
+                            />
+                          )}
+                        </div>
+                        <div className="col-span-4">
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-g-500">$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={tier.perUnit || ''}
+                              onChange={(e) => updateTier(tierIndex, 'perUnit', e.target.value)}
+                              placeholder="0.00"
+                              className="w-full px-2 py-1.5 border border-g-200 rounded text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div className="col-span-4">
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-g-500">$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={tier.fixedFee || ''}
+                              onChange={(e) => updateTier(tierIndex, 'fixedFee', e.target.value)}
+                              placeholder="—"
+                              className="w-full px-2 py-1.5 border border-g-200 rounded text-sm"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={addTier} className="text-sm text-blue hover:underline">
+                    + Add tier
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
 
-      <button
-        onClick={addRateCard}
-        disabled={!editingCard.pricingModel}
-        className="w-full px-4 py-2.5 bg-blue text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-35"
-      >
-        Add rate card
-      </button>
-    </div>
-  )
+        {/* Only show "Add metered resource" if editing card has enough data */}
+        {editingCard.feature && editingCard.pricingModel && (
+          <button
+            onClick={() => addRateCard()}
+            className="text-sm text-blue hover:underline"
+          >
+            + Add metered resource
+          </button>
+        )}
+      </div>
+    )
+  }
 
   const renderPrepaidConfig = () => (
     <div className="mb-6 p-5 border border-g-200 rounded bg-white">
@@ -987,13 +1359,16 @@ export default function CreateOfferingWizard({ isAddon = false }) {
 
       // For subscription, use editingCard to show live preview
       if (state.isPaid === true && state.monetizationStrategy === 'subscription') {
+        const timing = editingCard.billingTiming ? ` (${editingCard.billingTiming === 'advance' ? 'in-advance' : 'in-arrears'})` : ''
+        const formatPrice = (price) => parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
         if (state.pricingModel === 'fixed') {
           if (editingCard.billingPeriod === 'both' && editingCard.monthlyPrice && editingCard.annualPrice) {
-            return `Customers pay $${editingCard.monthlyPrice}/month or $${editingCard.annualPrice}/year.`
+            return `Customers pay $${formatPrice(editingCard.monthlyPrice)}/month or $${formatPrice(editingCard.annualPrice)}/year${timing}.`
           } else if (editingCard.billingPeriod === 'monthly' && editingCard.monthlyPrice) {
-            return `Customers pay $${editingCard.monthlyPrice}/month.`
+            return `Customers pay $${formatPrice(editingCard.monthlyPrice)}/month${timing}.`
           } else if (editingCard.billingPeriod === 'annual' && editingCard.annualPrice) {
-            return `Customers pay $${editingCard.annualPrice}/year.`
+            return `Customers pay $${formatPrice(editingCard.annualPrice)}/year${timing}.`
           }
         } else if (state.pricingModel === 'per-unit' && state.selectedFeature) {
           const [serviceId, featureSlug] = state.selectedFeature.split('_')
@@ -1001,11 +1376,11 @@ export default function CreateOfferingWizard({ isAddon = false }) {
           const featureName = feature?.name?.toLowerCase() || 'unit'
 
           if (editingCard.billingPeriod === 'both' && editingCard.monthlyPrice && editingCard.annualPrice) {
-            return `Customers pay $${editingCard.monthlyPrice} per ${featureName} per month or $${editingCard.annualPrice} per ${featureName} per year.`
+            return `Customers pay $${formatPrice(editingCard.monthlyPrice)} per ${featureName} per month or $${formatPrice(editingCard.annualPrice)} per ${featureName} per year${timing}.`
           } else if (editingCard.billingPeriod === 'monthly' && editingCard.monthlyPrice) {
-            return `Customers pay $${editingCard.monthlyPrice} per ${featureName} per month.`
+            return `Customers pay $${formatPrice(editingCard.monthlyPrice)} per ${featureName} per month${timing}.`
           } else if (editingCard.billingPeriod === 'annual' && editingCard.annualPrice) {
-            return `Customers pay $${editingCard.annualPrice} per ${featureName} per year.`
+            return `Customers pay $${formatPrice(editingCard.annualPrice)} per ${featureName} per year${timing}.`
           }
         }
       }
@@ -1014,19 +1389,28 @@ export default function CreateOfferingWizard({ isAddon = false }) {
       if (state.isPaid === true && state.monetizationStrategy === 'one-time') {
         if (editingCard.monthlyPrice && editingCard.billingTiming) {
           const timing = editingCard.billingTiming === 'advance' ? 'in-advance' : 'in-arrears'
-          return `Customers pay $${editingCard.monthlyPrice} once (${timing}).`
+          const formatPrice = (price) => parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          return `Customers pay $${formatPrice(editingCard.monthlyPrice)} once (${timing}).`
         }
       }
 
-      // For other strategies, use rate cards
-      if (state.isPaid === true && state.rateCards.length > 0) {
-        if (state.monetizationStrategy === 'payg') {
-          const count = state.rateCards.length
-          return `Customers pay based on usage${count > 1 ? ` across ${count} metered resources` : ''}.`
-        } else if (state.monetizationStrategy === 'prepaid') {
-          const card = state.rateCards[0]
-          return `Customers purchase credits in blocks of ${card.blockSize} for $${card.blockPrice}.`
+      // For PAYG, check editingCard or rate cards
+      if (state.isPaid === true && state.monetizationStrategy === 'payg') {
+        const formatPrice = (price) => parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        const totalResources = state.rateCards.length + (editingCard.feature && editingCard.pricingModel ? 1 : 0)
+
+        if (totalResources > 0) {
+          const timing = editingCard.billingTiming ? ` (${editingCard.billingTiming === 'advance' ? 'in-advance' : 'in-arrears'})` : ''
+          return `Customers pay based on usage${totalResources > 1 ? ` across ${totalResources} metered resources` : ''}${timing}.`
         }
+      }
+
+      // For prepaid, use rate cards
+      if (state.isPaid === true && state.monetizationStrategy === 'prepaid' && state.rateCards.length > 0) {
+        const formatPrice = (price) => parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        const card = state.rateCards[0]
+        const timing = card.billingTiming ? ` (${card.billingTiming === 'immediate' ? 'immediate' : 'in-advance'})` : ''
+        return `Customers purchase credits in blocks of ${card.blockSize.toLocaleString('en-US')} for $${formatPrice(card.blockPrice)}${timing}.`
       }
 
       return null
@@ -1192,6 +1576,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                         {/* Feature picker - only for per-unit */}
                         {state.pricingModel === 'per-unit' && (
                           <>
+                            <div className="border-t border-g-200 my-5" />
                             <label className="block text-sm font-medium text-g-700 mb-1.5">
                               What is being charged for? <span className="text-red">*</span>
                             </label>
@@ -1202,7 +1587,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                                 dispatch({ type: 'SET_FIELD', field: 'selectedResource', value: '' })
                                 setEditingCard({ ...editingCard, pricingModel: 'per-unit' })
                               }}
-                              className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm bg-white mb-4"
+                              className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm bg-white"
                             >
                               <option value="">Select a feature...</option>
                               {SERVICES.map(service => {
@@ -1223,6 +1608,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                             {/* Billing timing selector - shown after feature selection */}
                             {state.selectedFeature && (
                               <>
+                                <div className="border-t border-g-200 my-5" />
                                 <label className="block text-sm font-medium text-g-700 mb-2">Billing timing</label>
                                 <div className="space-y-2 mb-3">
                                   {[
@@ -1265,6 +1651,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                             {/* Billing period and price inputs - shown after billing timing */}
                             {state.selectedFeature && editingCard.billingTiming && (
                               <>
+                                <div className="border-t border-g-200 my-5" />
                                 <label className="block text-sm font-medium text-g-700 mb-2">Billing cycles</label>
                                 <div className="space-y-2 mb-3">
                                   {[
@@ -1299,6 +1686,8 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                                     </label>
                                   ))}
                                 </div>
+
+                                <div className="border-t border-g-200 my-5" />
 
                                 {(() => {
                                   const featureName = (() => {
@@ -1358,12 +1747,13 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                                         const monthlyAnnualized = monthly * 12
                                         const savings = monthlyAnnualized - annual
                                         const savingsPercent = Math.round((savings / monthlyAnnualized) * 100)
+                                        const formatPrice = (price) => price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
                                         if (savings > 0) {
                                           return (
                                             <div className="mb-4 p-3 bg-green/5 border border-green/20 rounded">
                                               <div className="text-sm text-green-dark font-medium">
-                                                Save ${savings.toFixed(2)} ({savingsPercent}%) with annual billing
+                                                Save ${formatPrice(savings)} ({savingsPercent}%) with annual billing
                                               </div>
                                             </div>
                                           )
@@ -1371,7 +1761,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                                           return (
                                             <div className="mb-4 p-3 bg-orange/5 border border-orange/20 rounded">
                                               <div className="text-sm text-orange-dark">
-                                                Annual price is ${Math.abs(savings).toFixed(2)} higher than monthly × 12
+                                                Annual price is ${formatPrice(Math.abs(savings))} higher than monthly × 12
                                               </div>
                                             </div>
                                           )
@@ -1389,6 +1779,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                         {/* Flat fee pricing - shown immediately after selecting flat fee */}
                         {state.pricingModel === 'fixed' && (
                           <>
+                            <div className="border-t border-g-200 my-5" />
                             <label className="block text-sm font-medium text-g-700 mb-2">Billing timing</label>
                             <div className="space-y-2 mb-3">
                               {[
@@ -1428,6 +1819,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
 
                             {editingCard.billingTiming && (
                               <>
+                                <div className="border-t border-g-200 my-5" />
                                 <label className="block text-sm font-medium text-g-700 mb-2">Billing cycles</label>
                                 <div className="space-y-2 mb-3">
                                   {[
@@ -1462,6 +1854,8 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                                 </label>
                               ))}
                             </div>
+
+                            <div className="border-t border-g-200 my-5" />
 
                             {(editingCard.billingPeriod === 'monthly' || editingCard.billingPeriod === 'both') && (
                               <div className="mb-3">
@@ -1510,12 +1904,13 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                               const monthlyAnnualized = monthly * 12
                               const savings = monthlyAnnualized - annual
                               const savingsPercent = Math.round((savings / monthlyAnnualized) * 100)
+                              const formatPrice = (price) => price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
                               if (savings > 0) {
                                 return (
                                   <div className="p-3 bg-green/5 border border-green/20 rounded">
                                     <div className="text-sm text-green-dark font-medium">
-                                      Save ${savings.toFixed(2)} ({savingsPercent}%) with annual billing
+                                      Save ${formatPrice(savings)} ({savingsPercent}%) with annual billing
                                     </div>
                                   </div>
                                 )
@@ -1523,7 +1918,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                                 return (
                                   <div className="p-3 bg-orange/5 border border-orange/20 rounded">
                                     <div className="text-sm text-orange-dark">
-                                      Annual price is ${Math.abs(savings).toFixed(2)} higher than monthly × 12
+                                      Annual price is ${formatPrice(Math.abs(savings))} higher than monthly × 12
                                     </div>
                                   </div>
                                 )
@@ -1567,33 +1962,8 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                       </>
                     )}
 
-                    {/* For PAYG: Meter picker */}
-                    {state.monetizationStrategy === 'payg' && (
-                      <>
-                        <label className="block text-sm font-medium text-g-700 mb-1.5">
-                          Which meter?
-                        </label>
-                        <select
-                          value={state.selectedMeter}
-                          onChange={(e) => {
-                            dispatch({ type: 'SET_FIELD', field: 'selectedMeter', value: e.target.value })
-                            dispatch({ type: 'SET_FIELD', field: 'selectedResource', value: '' })
-                          }}
-                          className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm bg-white mb-4"
-                        >
-                          <option value="">Select a meter...</option>
-                          {METERS.map(meter => (
-                            <option key={meter.id} value={meter.id}>
-                              {meter.name} ({meter.unit})
-                            </option>
-                          ))}
-                        </select>
-                      </>
-                    )}
-
-                    {/* Resource picker - shows for PAYG or when metered feature selected */}
-                    {((state.monetizationStrategy === 'payg' && state.selectedMeter) ||
-                      (['subscription', 'prepaid'].includes(state.monetizationStrategy) && state.selectedFeature === 'build_minutes')) && (
+                    {/* Resource picker - shows for prepaid when metered feature selected */}
+                    {(['subscription', 'prepaid'].includes(state.monetizationStrategy) && state.selectedFeature === 'build_minutes') && (
                       <>
                         <label className="block text-sm font-medium text-g-700 mb-1.5">
                           Which resource?
