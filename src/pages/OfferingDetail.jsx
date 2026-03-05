@@ -80,52 +80,52 @@ export default function OfferingDetail() {
 
   return (
     <div>
-      {/* Back Button */}
-      <Link
-        to={`/offerings/group/${offering.group}`}
-        className="inline-flex items-center gap-1 text-sm text-g-500 hover:text-g-700 mb-4 transition-colors"
-      >
-        <span>←</span>
-        <span>{group?.short || 'Offerings'}</span>
-        <span>/</span>
-        <span className="font-medium text-g-900">{offering.name}</span>
-      </Link>
+      {/* Breadcrumb Area */}
+      <div className="mb-8">
+        <Link
+          to={`/offerings/group/${offering.group}`}
+          className="inline-flex items-center gap-1 text-sm text-g-500 hover:text-g-700 transition-colors"
+        >
+          <span>←</span>
+          <span>{group?.short || 'Offerings'}</span>
+          <span>/</span>
+          <span className="font-medium text-g-900">{offering.name}</span>
+        </Link>
+      </div>
 
-      {/* Header Card */}
-      <div className="bg-white border border-g-200 rounded p-5">
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <h1 className="text-2xl font-semibold text-g-900 tracking-tight inline-flex items-center">
-              {offering.name}
-              <DraftBadge status={offering.status} />
-            </h1>
-            <div className="text-[13px] text-g-500 mt-1.5">{offering.desc}</div>
+      {/* Header */}
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold text-g-900 tracking-tight">{offering.name}</h1>
+            <DraftBadge status={offering.status} />
           </div>
-          <div className="text-right ml-6 flex-shrink-0">
-            <div className="text-xl font-semibold font-mono text-g-900 tracking-tight">{offering.price}</div>
-            {offering.altPrice && (
-              <div className="text-[13px] text-g-400 mt-1">{offering.altPrice}</div>
+          <p className="text-sm text-g-500 mt-1.5">{offering.desc}</p>
+
+          {/* Meta Row */}
+          <div className="flex items-center gap-2 mt-3 text-xs">
+            <PkgBadge pkg={offering.pkg} />
+            <MonBadge mon={offering.mon} price={offering.price} />
+            <AcctBadge acct={offering.acct} />
+            <span className="text-g-300">·</span>
+            <span className="font-mono text-g-400">{offering.slug}</span>
+            {offering.requires && (
+              <>
+                <span className="text-g-300">·</span>
+                <span className="text-g-400">
+                  requires <span className="text-g-600 font-medium">{offering.requires}</span>
+                </span>
+              </>
             )}
           </div>
         </div>
 
-        {/* Meta Row */}
-        <div className="flex items-center gap-3 mt-3 pt-3 border-t border-g-100 text-[13px]">
-          <div className="flex items-center gap-2">
-            <PkgBadge pkg={offering.pkg} />
-            <MonBadge mon={offering.mon} price={offering.price} />
-            <AcctBadge acct={offering.acct} />
-          </div>
-          <span className="text-g-200">·</span>
-          <span className="font-mono text-xs text-g-400">{offering.slug}</span>
-          {offering.requires && (
-            <>
-              <span className="text-g-200">·</span>
-              <span className="text-xs text-g-400">
-                requires <strong className="text-g-600 font-medium">{offering.requires}</strong>
-              </span>
-            </>
+        <div className="text-right ml-8 flex-shrink-0">
+          <div className="text-2xl font-semibold font-mono text-g-900 tracking-tight">{offering.price}</div>
+          {offering.altPrice && (
+            <div className="text-sm text-g-400 mt-1 font-mono">{offering.altPrice}</div>
           )}
+          <div className="text-xs text-g-400 mt-2">{offering.cycle}</div>
         </div>
       </div>
 

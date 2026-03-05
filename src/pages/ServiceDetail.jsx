@@ -76,13 +76,18 @@ export default function ServiceDetail({ onOpenDrawer }) {
 
   return (
     <div>
-      {/* Back Breadcrumb */}
-      <Link
-        to="/features"
-        className="inline-flex items-center text-sm text-g-500 hover:text-g-700 transition-colors mb-4"
-      >
-        <span>← Features / <span className="text-g-900">{service.name}</span></span>
-      </Link>
+      {/* Breadcrumb Area */}
+      <div className="mb-8">
+        <Link
+          to="/features"
+          className="inline-flex items-center gap-1 text-sm text-g-500 hover:text-g-700 transition-colors"
+        >
+          <span>←</span>
+          <span>Features</span>
+          <span>/</span>
+          <span className="text-g-900">{service.name}</span>
+        </Link>
+      </div>
 
       {/* Service Header */}
       <h1 className="text-2xl font-semibold text-g-900 tracking-tight">{service.name}</h1>

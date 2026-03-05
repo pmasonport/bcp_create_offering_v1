@@ -28,6 +28,9 @@ export default function OfferingsIndex() {
 
   return (
     <div>
+      {/* Breadcrumb Area (empty for consistent title positioning) */}
+      <div className="h-6 mb-8"></div>
+
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>

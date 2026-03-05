@@ -10,14 +10,14 @@ export const OFFERINGS = [
   { id:"tc-pre", group:"testcontainers", name:"TC Cloud Minutes — Prepaid", slug:"tc-prepaid-minutes", desc:"Prepaid runtime minutes (block of 100)", pkg:"add_on", mon:"prepaid", acct:"both", price:"$3/100-min", cycle:"immediate", status:"active" },
   { id:"tc-od", group:"testcontainers", name:"TC Cloud Minutes — On-Demand", slug:"tc-on-demand-minutes", desc:"On-demand runtime billed at end of period", pkg:"add_on", mon:"payg", acct:"both", price:"$0.04/min", cycle:"arrears", status:"active" },
   // DHI
-  { id:"dhi-free", group:"dhi", name:"DHI — Free", slug:"dhi-free", desc:"Hardened images, SBOMs, SLSA provenance, Apache 2.0", pkg:"standalone", mon:"subscription", acct:"both", price:"$0", cycle:"free", status:"active" },
-  { id:"dhi-sel", group:"dhi", name:"DHI — Select", slug:"dhi-select-org", desc:"Production-ready security with compliance support", pkg:"standalone", mon:"subscription", acct:"organization", price:"$5,000/repo", cycle:"annual", status:"active" },
-  { id:"dhi-ent-r", group:"dhi", name:"DHI — Enterprise (Per-Repo)", slug:"dhi-enterprise-per-repo", desc:"CVE SLAs, FIPS/STIG, compliance, mirroring", pkg:"standalone", mon:"subscription", acct:"organization", price:"$8,000/repo", cycle:"annual", status:"active" },
-  { id:"dhi-ent-f", group:"dhi", name:"DHI — Enterprise (Full Catalog)", slug:"dhi-enterprise-full-catalog", desc:"Full DHI catalog access, unlimited repos", pkg:"standalone", mon:"subscription", acct:"organization", price:"$200,000", cycle:"annual · fixed", status:"active" },
-  { id:"dhi-els-r", group:"dhi", name:"DHI — ELS (Per-Repo)", slug:"dhi-els-per-repo", desc:"+5 yrs hardened updates for EOL software", pkg:"add_on", mon:"subscription", acct:"organization", price:"$8,000/repo", cycle:"annual", status:"active", requires:"DHI Enterprise (Per-Repo)" },
-  { id:"dhi-els-f", group:"dhi", name:"DHI — ELS (Full Catalog)", slug:"dhi-els-full-catalog", desc:"+5 yrs hardened updates for EOL software", pkg:"add_on", mon:"subscription", acct:"organization", price:"$200,000", cycle:"annual · fixed", status:"active", requires:"DHI Enterprise (Full Catalog)" },
+  { id:"dhi-free", group:"dhi", name:"Community", slug:"dhi-free", desc:"Hardened images, SBOMs, SLSA provenance, Apache 2.0", pkg:"standalone", mon:"subscription", acct:"both", price:"$0", cycle:"free", status:"active" },
+  { id:"dhi-sel", group:"dhi", name:"Select", slug:"dhi-select-org", desc:"Production-ready security with compliance support", pkg:"standalone", mon:"subscription", acct:"organization", price:"$5,000/repo", cycle:"annual", status:"active" },
+  { id:"dhi-ent-r", group:"dhi", name:"Enterprise (Per-Repo)", slug:"dhi-enterprise-per-repo", desc:"CVE SLAs, FIPS/STIG, compliance, mirroring", pkg:"standalone", mon:"subscription", acct:"organization", price:"$8,000/repo", cycle:"annual", status:"active" },
+  { id:"dhi-ent-f", group:"dhi", name:"Enterprise (Full Catalog)", slug:"dhi-enterprise-full-catalog", desc:"Full catalog access, unlimited repos", pkg:"standalone", mon:"subscription", acct:"organization", price:"$200,000", cycle:"annual · fixed", status:"active" },
+  { id:"dhi-els-r", group:"dhi", name:"ELS (Per-Repo)", slug:"dhi-els-per-repo", desc:"+5 yrs hardened updates for EOL software", pkg:"add_on", mon:"subscription", acct:"organization", price:"$8,000/repo", cycle:"annual", status:"active", requires:"Enterprise (Per-Repo)" },
+  { id:"dhi-els-f", group:"dhi", name:"ELS (Full Catalog)", slug:"dhi-els-full-catalog", desc:"+5 yrs hardened updates for EOL software", pkg:"add_on", mon:"subscription", acct:"organization", price:"$200,000", cycle:"annual · fixed", status:"active", requires:"Enterprise (Full Catalog)" },
   // Premium Support
-  { id:"prem", group:"premium-support", name:"Premium Support", slug:"premium-support-org", desc:"24×7 support with priority SLAs, escalation, live troubleshooting, and RCA", pkg:"add_on", mon:"subscription", acct:"organization", price:"$40,000", cycle:"annual · fixed", status:"active", requires:"Docker Business or DHI Enterprise (Per-Repo) or (Full Catalog)" },
+  { id:"prem", group:"premium-support", name:"Premium Support", slug:"premium-support-org", desc:"24×7 support with priority SLAs, escalation, live troubleshooting, and RCA", pkg:"add_on", mon:"subscription", acct:"organization", price:"$40,000", cycle:"annual · fixed", status:"active", requires:"Docker Business or Enterprise (Per-Repo) or (Full Catalog)" },
   // Gordon
   { id:"g-pro", group:"gordon", name:"Gordon Pro", slug:"gordon-pro", desc:"2× credits ($18 budget), excess enabled", pkg:"add_on", mon:"subscription", acct:"user", price:"$20/mo", cycle:"monthly", status:"active" },
   { id:"g-max", group:"gordon", name:"Gordon Max", slug:"gordon-max", desc:"5× credits ($45 budget), excess enabled", pkg:"add_on", mon:"subscription", acct:"user", price:"$50/mo", cycle:"monthly", status:"active" },
@@ -27,7 +27,7 @@ export const OFFERINGS = [
   { id:"g-max-o", group:"gordon", name:"Gordon Max (Org)", slug:"gordon-max-org", desc:"Org variant — pricing TBD", pkg:"add_on", mon:"subscription", acct:"organization", price:"pricing TBD", cycle:"—", status:"draft" },
   { id:"g-ult-o", group:"gordon", name:"Gordon Ultra (Org)", slug:"gordon-ultra-org", desc:"Org variant — pricing TBD", pkg:"add_on", mon:"subscription", acct:"organization", price:"pricing TBD", cycle:"—", status:"draft" },
   // Sandboxes
-  { id:"sbx", group:"sandboxes", name:"Docker Sandboxes", slug:"sandboxes-payg", desc:"On-demand ephemeral compute — CPU, memory, storage metered", pkg:"standalone", mon:"payg", acct:"both", price:"from $0.035/hr", cycle:"arrears", status:"active" },
+  { id:"sbx", group:"sandboxes", name:"Sandboxes", slug:"sandboxes-payg", desc:"On-demand ephemeral compute — CPU, memory, storage metered", pkg:"standalone", mon:"payg", acct:"both", price:"from $0.035/hr", cycle:"arrears", status:"active" },
 ];
 
 // Explicit dependency mapping: add-on ID → array of required offering IDs

@@ -5,6 +5,9 @@ import { SERVICES } from '../data/services'
 export default function FeaturesIndex() {
   return (
     <div>
+      {/* Breadcrumb Area (empty for consistent title positioning) */}
+      <div className="h-6 mb-8"></div>
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-g-900 tracking-tight">Features</h1>

@@ -5,10 +5,10 @@ export const SERVICES = [
   { id:"build", name:"Docker Build", slug:"build", desc:"Build minutes and build capabilities", featureCount: 5 },
   { id:"scout", name:"Docker Scout", slug:"scout", desc:"Security scanning and vulnerability detection", featureCount: 11 },
   { id:"testcontainers", name:"Testcontainers Cloud", slug:"testcontainers", desc:"Cloud-hosted test containers for CI and desktop testing", featureCount: 6 },
-  { id:"dhi", name:"Docker Hardened Images", slug:"hardened_images", desc:"Secure, minimal container images with SBOMs, provenance, and CVE remediation", featureCount: 14 },
+  { id:"dhi", name:"Hardened Images", slug:"hardened_images", desc:"Secure, minimal container images with SBOMs, provenance, and CVE remediation", featureCount: 15 },
   { id:"support", name:"Docker Support", slug:"support", desc:"Standard and premium support services", featureCount: 15 },
   { id:"gordon", name:"Gordon", slug:"gordon", desc:"Docker AI assistant — debugging, setup, deployment, infrastructure management", featureCount: 4 },
-  { id:"sandboxes", name:"Docker Sandboxes", slug:"sandboxes", desc:"On-demand ephemeral compute environments with configurable CPU, memory, and storage", featureCount: 4 },
+  { id:"sandboxes", name:"Sandboxes", slug:"sandboxes", desc:"On-demand ephemeral compute environments with configurable CPU, memory, and storage", featureCount: 4 },
 ];
 
 export const SERVICE_FEATURES = {
@@ -78,8 +78,9 @@ export const SERVICE_FEATURES = {
     { slug:"tc_additional_minutes", name:"TC Additional Minutes", type:"integer", mutable:true, metering:"aggregated", desc:"Additional runtime minutes (prepaid top-up or on-demand)" },
   ],
   "dhi": [
-    { slug:"dhi_enabled", name:"DHI Enabled", type:"boolean", mutable:false, metering:"static", desc:"Access to Docker Hardened Images" },
-    { slug:"dhi_repos_count", name:"DHI Repositories", type:"integer", mutable:true, metering:"static", desc:"Number of DHI repos included (purchasable for Select/Enterprise Per-Repo)" },
+    { slug:"dhi_enabled", name:"Enabled", type:"boolean", mutable:false, metering:"static", desc:"Access to Hardened Images" },
+    { slug:"dhi_hardened_image_repos", name:"Hardened Image Repos", type:"integer", mutable:true, metering:"static", desc:"Number of Hardened Image repos accessible" },
+    { slug:"dhi_repos_count", name:"Repositories", type:"integer", mutable:true, metering:"static", desc:"Number of repos included (purchasable for Select/Enterprise Per-Repo)" },
     { slug:"dhi_sbom_enabled", name:"SBOMs Enabled", type:"boolean", mutable:false, desc:"Verifiable SBOMs on all hardened images" },
     { slug:"dhi_slsa_provenance", name:"SLSA Provenance", type:"boolean", mutable:false, desc:"SLSA Level 3 build provenance" },
     { slug:"dhi_cve_visibility", name:"Full CVE Visibility", type:"boolean", mutable:false, desc:"Unsuppressed CVE visibility across all images" },
@@ -88,10 +89,10 @@ export const SERVICE_FEATURES = {
     { slug:"dhi_compliance_support", name:"Compliance Support", type:"boolean", mutable:false, desc:"PCI DSS, CMMC, CIS compliance support" },
     { slug:"dhi_mirroring", name:"Mirroring & Customization", type:"boolean", mutable:false, desc:"Private mirroring and image customization" },
     { slug:"dhi_els_enabled", name:"Extended Lifecycle Support", type:"boolean", mutable:false, desc:"Hardened updates for end-of-life software" },
-    { slug:"dhi_select_enabled", name:"DHI Select Enabled", type:"boolean", mutable:false, desc:"DHI Select tier gate" },
+    { slug:"dhi_select_enabled", name:"Select Enabled", type:"boolean", mutable:false, desc:"Select tier gate" },
     { slug:"dhi_customizations_limit", name:"Customizations per Repo", type:"integer", mutable:false, metering:"static", desc:"Max customizations per repo. -1=unlimited" },
     { slug:"dhi_hardened_sys_pkg_repo", name:"Hardened System Packages Repo", type:"boolean", mutable:false, desc:"Access to Hardened System Packages repository" },
-    { slug:"dhi_full_catalog_access", name:"Full Catalog Access", type:"boolean", mutable:false, desc:"Full DHI catalog access (vs per-repo)" },
+    { slug:"dhi_full_catalog_access", name:"Full Catalog Access", type:"boolean", mutable:false, desc:"Full catalog access (vs per-repo)" },
   ],
   "support": [
     { slug:"premium_support_enabled", name:"Premium Support Enabled", type:"boolean", mutable:false, desc:"24×7 premium support with priority SLAs" },

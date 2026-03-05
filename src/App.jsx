@@ -27,7 +27,7 @@ function App() {
           onEnvironmentChange={setEnvironment}
         />
         <main className="flex-1 ml-[200px] bg-g-50 min-h-screen">
-          <div className="max-w-[960px] px-10 py-12 pb-40">
+          <div className="max-w-[960px] px-10 pt-4 pb-40">
             <ScrollToTop />
             <Routes>
               <Route path="/" element={<OfferingsIndex />} />

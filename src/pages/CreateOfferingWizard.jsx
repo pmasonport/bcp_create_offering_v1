@@ -1107,13 +1107,17 @@ export default function CreateOfferingWizard({ isAddon = false }) {
   }
 
   return (
-    <div className="max-w-[960px] px-10 py-12 pb-40">
-      <button
-        onClick={() => navigate(-1)}
-        className="text-[13px] text-g-400 hover:text-g-700 inline-flex items-center gap-1 mb-6 border-0 bg-transparent cursor-pointer"
-      >
-        ← <span className="text-g-900 font-medium">Offerings</span>
-      </button>
+    <div className="max-w-[960px] px-10 pt-4 pb-40">
+      {/* Breadcrumb Area */}
+      <div className="mb-8">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-sm text-g-500 hover:text-g-700 inline-flex items-center gap-1 border-0 bg-transparent cursor-pointer transition-colors"
+        >
+          <span>←</span>
+          <span className="text-g-900 font-medium">Offerings</span>
+        </button>
+      </div>
 
       <h1 className="text-2xl font-semibold tracking-tight text-g-900">
         Create {isAddon ? 'Add-on' : 'Offering'}

@@ -94,8 +94,9 @@ export const OFFERING_ENTITLEMENTS = {
     ]},
   ],
   "dhi-free": [
-    { svc:"Docker Hardened Images", slug:"dhi", feats:[
-      {s:"dhi_enabled",v:"✓"},{s:"dhi_sbom_enabled",v:"✓"},{s:"dhi_slsa_provenance",v:"✓"},
+    { svc:"Hardened Images", slug:"dhi", feats:[
+      {s:"dhi_enabled",v:"✓"},{s:"dhi_hardened_image_repos",v:"0",m:"static",dim:true},
+      {s:"dhi_sbom_enabled",v:"✓"},{s:"dhi_slsa_provenance",v:"✓"},
       {s:"dhi_cve_visibility",v:"✓"},{s:"dhi_cve_remediation_sla",v:"✗",dim:true},
       {s:"dhi_fips_stig",v:"✗",dim:true},{s:"dhi_compliance_support",v:"✗",dim:true},
       {s:"dhi_mirroring",v:"✗",dim:true},{s:"dhi_els_enabled",v:"✗",dim:true},
@@ -104,8 +105,9 @@ export const OFFERING_ENTITLEMENTS = {
     ]},
   ],
   "dhi-sel": [
-    { svc:"Docker Hardened Images", slug:"dhi", feats:[
-      {s:"dhi_enabled",v:"✓"},{s:"dhi_sbom_enabled",v:"✓"},{s:"dhi_slsa_provenance",v:"✓"},
+    { svc:"Hardened Images", slug:"dhi", feats:[
+      {s:"dhi_enabled",v:"✓"},{s:"dhi_hardened_image_repos",v:"1",m:"static"},
+      {s:"dhi_sbom_enabled",v:"✓"},{s:"dhi_slsa_provenance",v:"✓"},
       {s:"dhi_cve_visibility",v:"✓"},{s:"dhi_cve_remediation_sla",v:"✓"},
       {s:"dhi_fips_stig",v:"✓"},{s:"dhi_compliance_support",v:"✓"},
       {s:"dhi_mirroring",v:"✗",dim:true},{s:"dhi_els_enabled",v:"✗",dim:true},
@@ -114,8 +116,9 @@ export const OFFERING_ENTITLEMENTS = {
     ]},
   ],
   "dhi-ent-r": [
-    { svc:"Docker Hardened Images", slug:"dhi", feats:[
-      {s:"dhi_enabled",v:"✓"},{s:"dhi_sbom_enabled",v:"✓"},{s:"dhi_slsa_provenance",v:"✓"},
+    { svc:"Hardened Images", slug:"dhi", feats:[
+      {s:"dhi_enabled",v:"✓"},{s:"dhi_hardened_image_repos",v:"1",m:"static"},
+      {s:"dhi_sbom_enabled",v:"✓"},{s:"dhi_slsa_provenance",v:"✓"},
       {s:"dhi_cve_visibility",v:"✓"},{s:"dhi_cve_remediation_sla",v:"✓"},
       {s:"dhi_fips_stig",v:"✓"},{s:"dhi_compliance_support",v:"✓"},
       {s:"dhi_mirroring",v:"✓"},{s:"dhi_els_enabled",v:"✗",dim:true},
@@ -124,8 +127,9 @@ export const OFFERING_ENTITLEMENTS = {
     ]},
   ],
   "dhi-ent-f": [
-    { svc:"Docker Hardened Images", slug:"dhi", feats:[
-      {s:"dhi_enabled",v:"✓"},{s:"dhi_sbom_enabled",v:"✓"},{s:"dhi_slsa_provenance",v:"✓"},
+    { svc:"Hardened Images", slug:"dhi", feats:[
+      {s:"dhi_enabled",v:"✓"},{s:"dhi_hardened_image_repos",v:"∞",m:"static"},
+      {s:"dhi_sbom_enabled",v:"✓"},{s:"dhi_slsa_provenance",v:"✓"},
       {s:"dhi_cve_visibility",v:"✓"},{s:"dhi_cve_remediation_sla",v:"✓"},
       {s:"dhi_fips_stig",v:"✓"},{s:"dhi_compliance_support",v:"✓"},
       {s:"dhi_mirroring",v:"✓"},{s:"dhi_els_enabled",v:"✗",dim:true},
@@ -134,12 +138,12 @@ export const OFFERING_ENTITLEMENTS = {
     ]},
   ],
   "dhi-els-r": [
-    { svc:"Docker Hardened Images", slug:"dhi", feats:[
+    { svc:"Hardened Images", slug:"dhi", feats:[
       {s:"dhi_els_enabled",v:"✓"},
     ]},
   ],
   "dhi-els-f": [
-    { svc:"Docker Hardened Images", slug:"dhi", feats:[
+    { svc:"Hardened Images", slug:"dhi", feats:[
       {s:"dhi_els_enabled",v:"✓"},
     ]},
   ],
@@ -199,7 +203,7 @@ export const OFFERING_ENTITLEMENTS = {
     ]},
   ],
   "sbx": [
-    { svc:"Docker Sandboxes", slug:"sandboxes", feats:[
+    { svc:"Sandboxes", slug:"sandboxes", feats:[
       {s:"sandboxes_enabled",v:"✓",m:"static"},
       {s:"sandbox_cpu_usage",v:"∞ (PAYG)",m:"aggregated"},
       {s:"sandbox_memory_usage",v:"∞ (PAYG)",m:"aggregated"},
@@ -242,10 +246,10 @@ export const LIFECYCLE = {
   "pro": [{dir:"↑",text:"upgrade from: Docker Personal (immediate)"},{dir:"↓",text:"downgrade to: Docker Personal (end of period)"}],
   "team": [{dir:"↑",text:"upgrade to: Docker Business (immediate)"}],
   "business": [{dir:"↓",text:"downgrade to: Docker Team (end of period)"}],
-  "dhi-free": [{dir:"↑",text:"upgrade to: DHI Select (immediate)"},{dir:"↑",text:"upgrade to: DHI Enterprise (immediate)"}],
-  "dhi-sel": [{dir:"↑",text:"upgrade from: DHI Free (immediate)"},{dir:"↑",text:"upgrade to: DHI Enterprise (immediate)"},{dir:"↓",text:"downgrade to: DHI Free (end of period)"}],
-  "dhi-ent-r": [{dir:"↑",text:"upgrade from: DHI Select (immediate)"},{dir:"↓",text:"downgrade to: DHI Select (end of period)"}],
-  "dhi-ent-f": [{dir:"↑",text:"upgrade from: DHI Select (immediate)"},{dir:"↓",text:"downgrade to: DHI Select (end of period)"}],
+  "dhi-free": [{dir:"↑",text:"upgrade to: Select (immediate)"},{dir:"↑",text:"upgrade to: Enterprise (immediate)"}],
+  "dhi-sel": [{dir:"↑",text:"upgrade from: Community (immediate)"},{dir:"↑",text:"upgrade to: Enterprise (immediate)"},{dir:"↓",text:"downgrade to: Community (end of period)"}],
+  "dhi-ent-r": [{dir:"↑",text:"upgrade from: Select (immediate)"},{dir:"↓",text:"downgrade to: Select (end of period)"}],
+  "dhi-ent-f": [{dir:"↑",text:"upgrade from: Select (immediate)"},{dir:"↓",text:"downgrade to: Select (end of period)"}],
   "g-pro": [{dir:"↑",text:"upgrade to: Gordon Max (immediate)"},{dir:"↑",text:"upgrade to: Gordon Ultra (immediate)"}],
   "g-max": [{dir:"↑",text:"upgrade from: Gordon Pro (immediate)"},{dir:"↑",text:"upgrade to: Gordon Ultra (immediate)"},{dir:"↓",text:"downgrade to: Gordon Pro (end of period)"}],
   "g-ult": [{dir:"↑",text:"upgrade from: Gordon Max (immediate)"},{dir:"↓",text:"downgrade to: Gordon Max (end of period)"},{dir:"↓",text:"downgrade to: Gordon Pro (end of period)"}],

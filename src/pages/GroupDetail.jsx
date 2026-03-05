@@ -111,16 +111,18 @@ export default function GroupDetail() {
 
   return (
     <div>
-      {/* Back Button */}
-      <Link
-        to="/offerings"
-        className="inline-flex items-center gap-1 text-sm text-g-500 hover:text-g-700 mb-4 transition-colors"
-      >
-        <span>←</span>
-        <span>Offerings</span>
-        <span>/</span>
-        <span className="font-medium text-g-900">{group.short}</span>
-      </Link>
+      {/* Breadcrumb Area */}
+      <div className="mb-8">
+        <Link
+          to="/offerings"
+          className="inline-flex items-center gap-1 text-sm text-g-500 hover:text-g-700 transition-colors"
+        >
+          <span>←</span>
+          <span>Offerings</span>
+          <span>/</span>
+          <span className="font-medium text-g-900">{group.short}</span>
+        </Link>
+      </div>
 
       {/* Header */}
       <div className="flex justify-between items-start">
@@ -145,7 +147,7 @@ export default function GroupDetail() {
       </div>
 
       {/* Filter Pills */}
-      <div className="flex items-center gap-2.5 mt-4 mb-1">
+      <div className="flex items-center gap-2.5 mt-4">
         <span className="text-xs font-medium text-g-400">Filter</span>
         <div className="flex gap-1.5">
           <button
@@ -206,7 +208,7 @@ export default function GroupDetail() {
       ) : (
         <>
           {/* Offerings Section */}
-          <div className="mt-9">
+          <div className="mt-4">
             <div className="text-xs font-semibold text-g-500 uppercase tracking-wide mb-3">Offerings</div>
             {offerings.length > 0 ? (
               <div className="bg-white border border-g-200 rounded overflow-hidden">
@@ -222,7 +224,7 @@ export default function GroupDetail() {
           </div>
 
           {/* Add-ons Section */}
-          <div className="mt-12">
+          <div className="mt-8">
             <div className="text-xs font-semibold text-g-500 uppercase tracking-wide mb-3">Add-Ons</div>
             {(internalAddons.length > 0 || externalCount > 0) ? (
               <div className="bg-white border border-g-200 rounded overflow-hidden">
