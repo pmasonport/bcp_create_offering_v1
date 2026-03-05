@@ -146,19 +146,34 @@ export default function CreateOfferingWizard({ isAddon = false }) {
     expiration: 'end-of-period'
   })
 
-  // Auto-generate slug from name
+  // Auto-generate slug from name with group prefix
   const handleNameChange = (value) => {
     dispatch({ type: 'SET_FIELD', field: 'name', value })
-    if (!state.slug || state.slug === slugify(state.name)) {
-      dispatch({ type: 'SET_FIELD', field: 'slug', value: slugify(value) })
+    if (!state.slug || state.slug === slugify(state.name, state.offeringGroup)) {
+      dispatch({ type: 'SET_FIELD', field: 'slug', value: slugify(value, state.offeringGroup) })
     }
   }
 
-  const slugify = (text) => {
-    return text
+  // Update slug when group changes
+  const handleGroupChange = (groupId) => {
+    dispatch({ type: 'SET_FIELD', field: 'offeringGroup', value: groupId })
+    // Re-generate slug with new group prefix if it was auto-generated
+    if (state.name && (!state.slug || state.slug === slugify(state.name, state.offeringGroup))) {
+      dispatch({ type: 'SET_FIELD', field: 'slug', value: slugify(state.name, groupId) })
+    }
+  }
+
+  const slugify = (text, groupId = '') => {
+    const baseSlug = text
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
+
+    // Prefix with group slug if available
+    if (groupId) {
+      return `${groupId}-${baseSlug}`
+    }
+    return baseSlug
   }
 
   // Step 1 validation
@@ -247,7 +262,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
   // Handle creating new offering group
   const handleGroupCreated = (newGroup) => {
     // Set the newly created group as selected
-    dispatch({ type: 'SET_FIELD', field: 'offeringGroup', value: newGroup.id })
+    handleGroupChange(newGroup.id)
 
     // Close drawer
     setShowCreateGroupDrawer(false)
@@ -304,7 +319,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                     key={group.id}
                     type="button"
                     onClick={() => {
-                      dispatch({ type: 'SET_FIELD', field: 'offeringGroup', value: group.id })
+                      handleGroupChange(group.id)
                       setShowGroupDropdown(false)
                     }}
                     className={`w-full text-left px-3.5 py-3 hover:bg-g-50 transition-colors ${
@@ -899,60 +914,62 @@ export default function CreateOfferingWizard({ isAddon = false }) {
   const renderPrepaidConfig = () => (
     <div className="mb-6 p-5 border border-g-200 rounded bg-white">
       <h4 className="text-sm font-semibold text-g-900 mb-4">Configure Prepaid Pricing</h4>
+      <p className="text-xs text-g-500 mb-4">Prepaid uses block pricing only</p>
 
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-g-700 mb-1.5">What is being sold?</label>
-        <select
-          value={editingCard.feature}
-          onChange={(e) => setEditingCard({ ...editingCard, feature: e.target.value })}
-          className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm bg-white"
-        >
-          <option value="">Select a feature...</option>
-          <option value="build_minutes">Build minutes (Docker Build)</option>
-          <option value="tc_minutes">TC runtime minutes (Testcontainers Cloud)</option>
-        </select>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <label className="block text-sm font-medium text-g-700 mb-1.5">Block size</label>
-          <input
-            type="number"
-            value={editingCard.blockSize}
-            onChange={(e) => setEditingCard({ ...editingCard, blockSize: e.target.value })}
-            placeholder="500"
-            className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm"
-          />
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-g-700 mb-1.5">What is being sold?</label>
+          <select
+            value={editingCard.feature}
+            onChange={(e) => setEditingCard({ ...editingCard, feature: e.target.value })}
+            className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm bg-white"
+          >
+            <option value="">Select a feature...</option>
+            <option value="build_minutes">Build minutes (Docker Build)</option>
+            <option value="tc_minutes">TC runtime minutes (Testcontainers Cloud)</option>
+          </select>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-g-700 mb-1.5">Block price</label>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-g-500">$</span>
+
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-g-700 mb-1.5">Block size</label>
             <input
               type="number"
-              step="0.01"
-              value={editingCard.blockPrice}
-              onChange={(e) => setEditingCard({ ...editingCard, blockPrice: e.target.value })}
-              placeholder="25.00"
-              className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
+              value={editingCard.blockSize}
+              onChange={(e) => setEditingCard({ ...editingCard, blockSize: e.target.value })}
+              placeholder="500"
+              className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-g-700 mb-1.5">Block price</label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-g-500">$</span>
+              <input
+                type="number"
+                step="0.01"
+                value={editingCard.blockPrice}
+                onChange={(e) => setEditingCard({ ...editingCard, blockPrice: e.target.value })}
+                placeholder="25.00"
+                className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
+              />
+            </div>
+          </div>
         </div>
-      </div>
 
-      <button
-        onClick={addRateCard}
-        disabled={!editingCard.feature || !editingCard.blockSize || !editingCard.blockPrice}
-        className="w-full px-4 py-2.5 bg-blue text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-35"
-      >
-        Add prepaid option
-      </button>
-    </div>
-  )
+        <button
+          onClick={addRateCard}
+          disabled={!editingCard.feature || !editingCard.blockSize || !editingCard.blockPrice}
+          className="w-full px-4 py-2.5 bg-blue text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-35"
+        >
+          Add prepaid option
+        </button>
+      </div>
+    )
 
   const renderOneTimeConfig = () => (
     <div className="mb-6 p-5 border border-g-200 rounded bg-white">
       <h4 className="text-sm font-semibold text-g-900 mb-4">Configure One-Time Payment</h4>
+      <p className="text-xs text-g-500 mb-4">One-time payments use fixed pricing only</p>
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-g-700 mb-1.5">Price</label>
@@ -1066,16 +1083,24 @@ export default function CreateOfferingWizard({ isAddon = false }) {
               </p>
               <div className="space-y-1.5">
                 {[
-                  { value: 'subscription', label: 'Subscription', desc: 'Recurring charge (monthly or annual). Example: $20/user/month' },
-                  { value: 'payg', label: 'Pay-as-you-go', desc: 'Charged based on usage at end of period. Example: $0.05 per build minute' },
-                  { value: 'prepaid', label: 'Pre-paid', desc: 'Customer buys blocks upfront and draws down. Example: 500 minutes for $25' },
-                  { value: 'one-time', label: 'One-time', desc: 'Single payment with no recurrence. Example: $500 setup fee' }
-                ].map(({ value, label, desc }) => {
+                  { value: 'subscription', label: 'Subscription', desc: 'Recurring charge (monthly or annual). Example: $20/user/month', billingTiming: 'advance', pricingModel: '' },
+                  { value: 'payg', label: 'Pay-as-you-go', desc: 'Charged based on usage at end of period. Example: $0.05 per build minute', billingTiming: 'arrears', pricingModel: '' },
+                  { value: 'prepaid', label: 'Pre-paid', desc: 'Customer buys blocks upfront and draws down. Example: 500 minutes for $25', billingTiming: 'immediate', pricingModel: 'block' },
+                  { value: 'one-time', label: 'One-time', desc: 'Single payment with no recurrence. Example: $500 setup fee', billingTiming: 'immediate', pricingModel: 'fixed' }
+                ].map(({ value, label, desc, billingTiming, pricingModel }) => {
                   const isSelected = state.monetizationStrategy === value
                   return (
                     <label
                       key={value}
-                      onClick={() => dispatch({ type: 'SET_FIELD', field: 'monetizationStrategy', value })}
+                      onClick={() => {
+                        dispatch({ type: 'SET_FIELD', field: 'monetizationStrategy', value })
+                        // Set default billing timing and pricing model based on strategy
+                        setEditingCard(prev => ({
+                          ...prev,
+                          billingTiming,
+                          ...(pricingModel && { pricingModel })
+                        }))
+                      }}
                       className={`flex items-start gap-3 p-3 border rounded cursor-pointer transition-all ${
                         isSelected
                           ? 'border-blue bg-blue-light/20'
