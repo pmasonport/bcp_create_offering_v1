@@ -854,8 +854,9 @@ export default function CreateOfferingWizard({ isAddon = false }) {
           Add each metered resource customers will be billed for. Each gets its own rate.
         </p>
 
-        {/* Display saved rate cards - keep them editable */}
-        {state.rateCards.map((card, cardIndex) => {
+        {/* For PAYG, we only show the editing card format - no separate saved cards section */}
+        {/* Display saved rate cards would go here, but for now we'll just use editing card */}
+        {false && state.rateCards.map((card, cardIndex) => {
           const [serviceId, featureSlug] = card.feature.split('_')
           const service = SERVICES.find(s => s.id === serviceId)
           const feature = SERVICE_FEATURES[serviceId]?.find(f => f.slug === featureSlug)
