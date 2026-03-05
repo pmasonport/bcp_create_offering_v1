@@ -2,7 +2,7 @@ import React from 'react'
 
 export default function Stepper({ steps, currentStep }) {
   return (
-    <div className="flex items-center mt-4 mb-6 p-4 bg-white border border-g-200 rounded-md">
+    <div className="flex items-center mt-6 mb-8">
       {steps.map((step, index) => {
         const stepNum = index + 1
         const isActive = stepNum === currentStep
