@@ -219,7 +219,12 @@ export default function CreateOfferingWizard({ isAddon = false }) {
       return true
     }
 
-    // Other strategies need at least one rate card
+    // For one-time, just validate price is filled
+    if (state.monetizationStrategy === 'one-time') {
+      return !!editingCard.monthlyPrice
+    }
+
+    // Other strategies (PAYG, prepaid) need at least one rate card
     return state.rateCards.length > 0
   }
 
@@ -914,32 +919,19 @@ export default function CreateOfferingWizard({ isAddon = false }) {
     )
 
   const renderOneTimeConfig = () => (
-    <div className="mb-6 p-5 border border-g-200 rounded bg-white">
-      <h4 className="text-sm font-semibold text-g-900 mb-4">Configure One-Time Payment</h4>
-      <p className="text-xs text-g-500 mb-4">One-time payments use fixed pricing only</p>
-
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-g-700 mb-1.5">Price</label>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-g-500">$</span>
-          <input
-            type="number"
-            step="0.01"
-            value={editingCard.monthlyPrice}
-            onChange={(e) => setEditingCard({ ...editingCard, monthlyPrice: e.target.value })}
-            placeholder="500.00"
-            className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
-          />
-        </div>
+    <div className="mb-5">
+      <label className="block text-sm font-medium text-g-700 mb-1.5">Price</label>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-g-500">$</span>
+        <input
+          type="number"
+          step="0.01"
+          value={editingCard.monthlyPrice}
+          onChange={(e) => setEditingCard({ ...editingCard, monthlyPrice: e.target.value, pricingModel: 'fixed' })}
+          placeholder="500.00"
+          className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
+        />
       </div>
-
-      <button
-        onClick={addRateCard}
-        disabled={!editingCard.monthlyPrice}
-        className="w-full px-4 py-2.5 bg-blue text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-35"
-      >
-        Set price
-      </button>
     </div>
   )
 
