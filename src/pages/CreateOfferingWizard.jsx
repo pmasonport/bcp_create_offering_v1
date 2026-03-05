@@ -1170,7 +1170,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                             {/* Billing period and price inputs - shown immediately after feature selection */}
                             {state.selectedFeature && (
                               <>
-                                <label className="block text-sm font-medium text-g-700 mb-2">Billing period</label>
+                                <label className="block text-sm font-medium text-g-700 mb-2">Billing cycles</label>
                                 <div className="space-y-2 mb-4">
                                   {[
                                     { value: 'monthly', label: 'Monthly' },
@@ -1251,6 +1251,34 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                                           </div>
                                         </div>
                                       )}
+
+                                      {/* Price difference indicator */}
+                                      {editingCard.billingPeriod === 'both' && editingCard.monthlyPrice && editingCard.annualPrice && (() => {
+                                        const monthly = parseFloat(editingCard.monthlyPrice)
+                                        const annual = parseFloat(editingCard.annualPrice)
+                                        const monthlyAnnualized = monthly * 12
+                                        const savings = monthlyAnnualized - annual
+                                        const savingsPercent = Math.round((savings / monthlyAnnualized) * 100)
+
+                                        if (savings > 0) {
+                                          return (
+                                            <div className="mb-4 p-3 bg-green/5 border border-green/20 rounded">
+                                              <div className="text-sm text-green-dark font-medium">
+                                                Save ${savings.toFixed(2)} ({savingsPercent}%) with annual billing
+                                              </div>
+                                            </div>
+                                          )
+                                        } else if (savings < 0) {
+                                          return (
+                                            <div className="mb-4 p-3 bg-orange/5 border border-orange/20 rounded">
+                                              <div className="text-sm text-orange-dark">
+                                                Annual price is ${Math.abs(savings).toFixed(2)} higher than monthly × 12
+                                              </div>
+                                            </div>
+                                          )
+                                        }
+                                        return null
+                                      })()}
                                     </>
                                   )
                                 })()}
@@ -1262,7 +1290,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                         {/* Flat fee pricing - shown immediately after selecting flat fee */}
                         {state.pricingModel === 'fixed' && (
                           <>
-                            <label className="block text-sm font-medium text-g-700 mb-2">Billing period</label>
+                            <label className="block text-sm font-medium text-g-700 mb-2">Billing cycles</label>
                             <div className="space-y-2 mb-4">
                               {[
                                 { value: 'monthly', label: 'Monthly' },
@@ -1316,7 +1344,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                             )}
 
                             {(editingCard.billingPeriod === 'annual' || editingCard.billingPeriod === 'both') && (
-                              <div>
+                              <div className="mb-4">
                                 <label className="block text-sm font-medium text-g-700 mb-1.5">Annual price</label>
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-g-500">$</span>
@@ -1332,6 +1360,34 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                                 </div>
                               </div>
                             )}
+
+                            {/* Price difference indicator */}
+                            {editingCard.billingPeriod === 'both' && editingCard.monthlyPrice && editingCard.annualPrice && (() => {
+                              const monthly = parseFloat(editingCard.monthlyPrice)
+                              const annual = parseFloat(editingCard.annualPrice)
+                              const monthlyAnnualized = monthly * 12
+                              const savings = monthlyAnnualized - annual
+                              const savingsPercent = Math.round((savings / monthlyAnnualized) * 100)
+
+                              if (savings > 0) {
+                                return (
+                                  <div className="p-3 bg-green/5 border border-green/20 rounded">
+                                    <div className="text-sm text-green-dark font-medium">
+                                      Save ${savings.toFixed(2)} ({savingsPercent}%) with annual billing
+                                    </div>
+                                  </div>
+                                )
+                              } else if (savings < 0) {
+                                return (
+                                  <div className="p-3 bg-orange/5 border border-orange/20 rounded">
+                                    <div className="text-sm text-orange-dark">
+                                      Annual price is ${Math.abs(savings).toFixed(2)} higher than monthly × 12
+                                    </div>
+                                  </div>
+                                )
+                              }
+                              return null
+                            })()}
                           </>
                         )}
                       </>
