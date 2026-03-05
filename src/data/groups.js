@@ -11,9 +11,6 @@ export const GROUPS = [
 // Which external groups' add-ons show on a given group's detail page
 export const EXTERNAL_ADDONS = {
   "dsop": [
-    { sourceGroup:"build-cloud", dep:"requires Pro, Team, or Business" },
-    { sourceGroup:"testcontainers", dep:"requires Pro, Team, or Business" },
-    { sourceGroup:"gordon", dep:"requires any DSoP subscription" },
     { sourceGroup:"premium-support", dep:"requires Docker Business" },
   ],
   "dhi": [

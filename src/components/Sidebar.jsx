@@ -25,7 +25,7 @@ export default function Sidebar({ environment, onEnvironmentChange }) {
           {/* Colored dot indicator */}
           <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
             <div className={`w-1.5 h-1.5 rounded-full ${
-              environment === 'staging' ? 'bg-orange-500' : 'bg-green-500'
+              environment === 'staging' ? 'bg-orange-500' : 'bg-blue'
             }`} />
           </div>
           {/* Dropdown arrow */}

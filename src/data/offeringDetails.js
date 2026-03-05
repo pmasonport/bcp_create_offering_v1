@@ -39,7 +39,7 @@ export const OFFERING_ENTITLEMENTS = {
     ]},
   ],
   "team": [
-    { svc:"General", slug:"general", feats:[{s:"seats",v:"5",m:"static"}]},
+    { svc:"General", slug:"general", feats:[{s:"seats",v:"1",m:"static"}]},
     { svc:"Docker Hub", slug:"hub", feats:[
       {s:"private_repositories_limit",v:"∞",m:"static"},{s:"image_pull_count_included_monthly",v:"100,000",m:"static"},
       {s:"concurrent_builds_limit",v:"15",m:"static"},
@@ -65,7 +65,7 @@ export const OFFERING_ENTITLEMENTS = {
     ]},
   ],
   "business": [
-    { svc:"General", slug:"general", feats:[{s:"seats",v:"5",m:"static"}]},
+    { svc:"General", slug:"general", feats:[{s:"seats",v:"1",m:"static"}]},
     { svc:"Docker Hub", slug:"hub", feats:[
       {s:"private_repositories_limit",v:"∞",m:"static"},{s:"image_pull_count_included_monthly",v:"1,000,000",m:"static"},
       {s:"concurrent_builds_limit",v:"15",m:"static"},{s:"image_access_management_enabled",v:"✓"},

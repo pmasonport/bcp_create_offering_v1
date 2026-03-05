@@ -2,8 +2,8 @@ export const OFFERINGS = [
   // DSoP
   { id:"personal", group:"dsop", name:"Docker Personal", slug:"docker-personal", desc:"Free tier for individual developers", pkg:"bundle", mon:"subscription", acct:"user", price:"$0", cycle:"free", status:"active" },
   { id:"pro", group:"dsop", name:"Docker Pro", slug:"docker-pro", desc:"Professional tier for individual developers", pkg:"bundle", mon:"subscription", acct:"user", price:"$11/mo", cycle:"monthly", altPrice:"$108/yr", altCycle:"annual", status:"active" },
-  { id:"team", group:"dsop", name:"Docker Team", slug:"docker-team", desc:"Collaboration tier for small teams ", pkg:"bundle", mon:"subscription", acct:"organization", price:"$16/seat", cycle:"monthly", altPrice:"$180/seat", altCycle:"annual", status:"active" },
-  { id:"business", group:"dsop", name:"Docker Business", slug:"docker-business", desc:"Enterprise tier with security and admin features ", pkg:"bundle", mon:"subscription", acct:"organization", price:"$24/seat", cycle:"annual only", status:"active" },
+  { id:"team", group:"dsop", name:"Docker Team", slug:"docker-team", desc:"Collaboration tier for small teams (1 seat minimum)", pkg:"bundle", mon:"subscription", acct:"organization", price:"$16/seat", cycle:"monthly", altPrice:"$180/seat", altCycle:"annual", status:"active" },
+  { id:"business", group:"dsop", name:"Docker Business", slug:"docker-business", desc:"Enterprise tier with security and admin features (1 seat minimum)", pkg:"bundle", mon:"subscription", acct:"organization", price:"$24/seat", cycle:"annual only", status:"active" },
   // Build Cloud
   { id:"bc-min", group:"build-cloud", name:"Build Cloud Minutes", slug:"build-cloud-minutes", desc:"Prepaid build minutes, expires end of subscription period", pkg:"add_on", mon:"prepaid", acct:"both", price:"$25/500-min", cycle:"immediate", status:"active" },
   // TC

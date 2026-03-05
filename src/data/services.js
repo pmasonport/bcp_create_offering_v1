@@ -5,7 +5,7 @@ export const SERVICES = [
   { id:"build", name:"Docker Build", slug:"build", desc:"Build minutes and build capabilities", featureCount: 5 },
   { id:"scout", name:"Docker Scout", slug:"scout", desc:"Security scanning and vulnerability detection", featureCount: 11 },
   { id:"testcontainers", name:"Testcontainers Cloud", slug:"testcontainers", desc:"Cloud-hosted test containers for CI and desktop testing", featureCount: 6 },
-  { id:"dhi", name:"Docker Hardened Images", slug:"hardened_images", desc:"Secure, minimal container images with SBOMs, provenance, and CVE remediation", featureCount: 13 },
+  { id:"dhi", name:"Docker Hardened Images", slug:"hardened_images", desc:"Secure, minimal container images with SBOMs, provenance, and CVE remediation", featureCount: 14 },
   { id:"support", name:"Docker Support", slug:"support", desc:"Standard and premium support services", featureCount: 15 },
   { id:"gordon", name:"Gordon", slug:"gordon", desc:"Docker AI assistant — debugging, setup, deployment, infrastructure management", featureCount: 4 },
   { id:"sandboxes", name:"Docker Sandboxes", slug:"sandboxes", desc:"On-demand ephemeral compute environments with configurable CPU, memory, and storage", featureCount: 4 },
@@ -79,6 +79,7 @@ export const SERVICE_FEATURES = {
   ],
   "dhi": [
     { slug:"dhi_enabled", name:"DHI Enabled", type:"boolean", mutable:false, metering:"static", desc:"Access to Docker Hardened Images" },
+    { slug:"dhi_repos_count", name:"DHI Repositories", type:"integer", mutable:true, metering:"static", desc:"Number of DHI repos included (purchasable for Select/Enterprise Per-Repo)" },
     { slug:"dhi_sbom_enabled", name:"SBOMs Enabled", type:"boolean", mutable:false, desc:"Verifiable SBOMs on all hardened images" },
     { slug:"dhi_slsa_provenance", name:"SLSA Provenance", type:"boolean", mutable:false, desc:"SLSA Level 3 build provenance" },
     { slug:"dhi_cve_visibility", name:"Full CVE Visibility", type:"boolean", mutable:false, desc:"Unsuppressed CVE visibility across all images" },
