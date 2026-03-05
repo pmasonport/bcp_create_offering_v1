@@ -202,8 +202,24 @@ export default function CreateOfferingWizard({ isAddon = false }) {
     // Free offerings only need the free rate card (auto-added)
     if (state.isPaid === false) return state.rateCards.length > 0
 
-    // Paid offerings need a strategy and at least one rate card
+    // Paid offerings need a strategy
     if (!state.monetizationStrategy) return false
+
+    // For subscription, validate fields are filled instead of checking rate cards
+    if (state.monetizationStrategy === 'subscription') {
+      if (!state.pricingModel) return false
+      if (state.pricingModel === 'per-unit' && !state.selectedFeature) return false
+      if (!editingCard.billingPeriod) return false
+
+      // Check that at least one price is entered
+      if (editingCard.billingPeriod === 'monthly' && !editingCard.monthlyPrice) return false
+      if (editingCard.billingPeriod === 'annual' && !editingCard.annualPrice) return false
+      if (editingCard.billingPeriod === 'both' && (!editingCard.monthlyPrice || !editingCard.annualPrice)) return false
+
+      return true
+    }
+
+    // Other strategies need at least one rate card
     return state.rateCards.length > 0
   }
 
@@ -934,17 +950,34 @@ export default function CreateOfferingWizard({ isAddon = false }) {
         return `Customers don't have to pay for this ${isAddon ? 'add-on' : 'offering'}.`
       }
 
-      if (state.isPaid === true && state.rateCards.length > 0) {
-        if (state.monetizationStrategy === 'subscription') {
-          const card = state.rateCards[0]
-          if (card.billingPeriod === 'both') {
-            return `Customers pay $${card.monthlyPrice}/month or $${card.annualPrice}/year.`
-          } else if (card.billingPeriod === 'monthly') {
-            return `Customers pay $${card.monthlyPrice}/month.`
-          } else if (card.billingPeriod === 'annual') {
-            return `Customers pay $${card.annualPrice}/year.`
+      // For subscription, use editingCard to show live preview
+      if (state.isPaid === true && state.monetizationStrategy === 'subscription') {
+        if (state.pricingModel === 'fixed') {
+          if (editingCard.billingPeriod === 'both' && editingCard.monthlyPrice && editingCard.annualPrice) {
+            return `Customers pay $${editingCard.monthlyPrice}/month or $${editingCard.annualPrice}/year.`
+          } else if (editingCard.billingPeriod === 'monthly' && editingCard.monthlyPrice) {
+            return `Customers pay $${editingCard.monthlyPrice}/month.`
+          } else if (editingCard.billingPeriod === 'annual' && editingCard.annualPrice) {
+            return `Customers pay $${editingCard.annualPrice}/year.`
           }
-        } else if (state.monetizationStrategy === 'payg') {
+        } else if (state.pricingModel === 'per-unit' && state.selectedFeature) {
+          const [serviceId, featureSlug] = state.selectedFeature.split('_')
+          const feature = SERVICE_FEATURES[serviceId]?.find(f => f.slug === featureSlug)
+          const featureName = feature?.name?.toLowerCase() || 'unit'
+
+          if (editingCard.billingPeriod === 'both' && editingCard.monthlyPrice && editingCard.annualPrice) {
+            return `Customers pay $${editingCard.monthlyPrice} per ${featureName} per month or $${editingCard.annualPrice} per ${featureName} per year.`
+          } else if (editingCard.billingPeriod === 'monthly' && editingCard.monthlyPrice) {
+            return `Customers pay $${editingCard.monthlyPrice} per ${featureName} per month.`
+          } else if (editingCard.billingPeriod === 'annual' && editingCard.annualPrice) {
+            return `Customers pay $${editingCard.annualPrice} per ${featureName} per year.`
+          }
+        }
+      }
+
+      // For other strategies, use rate cards
+      if (state.isPaid === true && state.rateCards.length > 0) {
+        if (state.monetizationStrategy === 'payg') {
           const count = state.rateCards.length
           return `Customers pay based on usage${count > 1 ? ` across ${count} metered resources` : ''}.`
         } else if (state.monetizationStrategy === 'prepaid') {
@@ -1059,7 +1092,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
             <div
               className="overflow-hidden transition-all duration-300 ease-in-out"
               style={{
-                maxHeight: state.monetizationStrategy ? '400px' : '0',
+                maxHeight: state.monetizationStrategy ? '2000px' : '0',
                 opacity: state.monetizationStrategy ? 1 : 0
               }}
             >
@@ -1137,20 +1170,38 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                             {/* Billing period and price inputs - shown immediately after feature selection */}
                             {state.selectedFeature && (
                               <>
-                                <label className="block text-sm font-medium text-g-700 mb-3">Billing period</label>
-                                <div className="flex gap-2 mb-4">
-                                  {['monthly', 'annual', 'both'].map(period => (
-                                    <button
-                                      key={period}
-                                      onClick={() => setEditingCard({ ...editingCard, billingPeriod: period })}
-                                      className={`flex-1 px-3 py-2 border rounded text-sm font-medium transition-all ${
-                                        editingCard.billingPeriod === period
-                                          ? 'border-blue bg-blue-light text-blue'
-                                          : 'border-g-200 bg-white text-g-600 hover:bg-g-50'
+                                <label className="block text-sm font-medium text-g-700 mb-2">Billing period</label>
+                                <div className="space-y-2 mb-4">
+                                  {[
+                                    { value: 'monthly', label: 'Monthly' },
+                                    { value: 'annual', label: 'Annual' },
+                                    { value: 'both', label: 'Monthly & annual' }
+                                  ].map(({ value, label }) => (
+                                    <label
+                                      key={value}
+                                      className={`flex items-center gap-3 p-3 border rounded cursor-pointer transition-all ${
+                                        editingCard.billingPeriod === value
+                                          ? 'border-blue bg-blue-light/20'
+                                          : 'border-g-200 hover:border-g-300'
                                       }`}
                                     >
-                                      {period === 'both' ? 'Monthly & annual' : period.charAt(0).toUpperCase() + period.slice(1)}
-                                    </button>
+                                      <div className={`w-4 h-4 border-2 rounded-full flex-shrink-0 flex items-center justify-center ${
+                                        editingCard.billingPeriod === value ? 'border-blue' : 'border-g-300'
+                                      }`}>
+                                        {editingCard.billingPeriod === value && (
+                                          <div className="w-2 h-2 bg-blue rounded-full" />
+                                        )}
+                                      </div>
+                                      <span className="text-sm text-g-900">{label}</span>
+                                      <input
+                                        type="radio"
+                                        name="billing-period"
+                                        value={value}
+                                        checked={editingCard.billingPeriod === value}
+                                        onChange={() => setEditingCard({ ...editingCard, billingPeriod: value })}
+                                        className="sr-only"
+                                      />
+                                    </label>
                                   ))}
                                 </div>
 
@@ -1200,14 +1251,6 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                                           </div>
                                         </div>
                                       )}
-
-                                      <button
-                                        onClick={addRateCard}
-                                        disabled={!editingCard.billingPeriod || (!editingCard.monthlyPrice && !editingCard.annualPrice)}
-                                        className="w-full px-4 py-2.5 bg-blue text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-35"
-                                      >
-                                        Set pricing
-                                      </button>
                                     </>
                                   )
                                 })()}
@@ -1219,22 +1262,38 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                         {/* Flat fee pricing - shown immediately after selecting flat fee */}
                         {state.pricingModel === 'fixed' && (
                           <>
-                            <label className="block text-sm font-medium text-g-700 mb-3">Billing period</label>
-                            <div className="flex gap-2 mb-4">
-                              {['monthly', 'annual', 'both'].map(period => (
-                                <button
-                                  key={period}
-                                  onClick={() => {
-                                    setEditingCard({ ...editingCard, billingPeriod: period, pricingModel: 'fixed' })
-                                  }}
-                                  className={`flex-1 px-3 py-2 border rounded text-sm font-medium transition-all ${
-                                    editingCard.billingPeriod === period
-                                      ? 'border-blue bg-blue-light text-blue'
-                                      : 'border-g-200 bg-white text-g-600 hover:bg-g-50'
+                            <label className="block text-sm font-medium text-g-700 mb-2">Billing period</label>
+                            <div className="space-y-2 mb-4">
+                              {[
+                                { value: 'monthly', label: 'Monthly' },
+                                { value: 'annual', label: 'Annual' },
+                                { value: 'both', label: 'Monthly & annual' }
+                              ].map(({ value, label }) => (
+                                <label
+                                  key={value}
+                                  className={`flex items-center gap-3 p-3 border rounded cursor-pointer transition-all ${
+                                    editingCard.billingPeriod === value
+                                      ? 'border-blue bg-blue-light/20'
+                                      : 'border-g-200 hover:border-g-300'
                                   }`}
                                 >
-                                  {period === 'both' ? 'Monthly & annual' : period.charAt(0).toUpperCase() + period.slice(1)}
-                                </button>
+                                  <div className={`w-4 h-4 border-2 rounded-full flex-shrink-0 flex items-center justify-center ${
+                                    editingCard.billingPeriod === value ? 'border-blue' : 'border-g-300'
+                                  }`}>
+                                    {editingCard.billingPeriod === value && (
+                                      <div className="w-2 h-2 bg-blue rounded-full" />
+                                    )}
+                                  </div>
+                                  <span className="text-sm text-g-900">{label}</span>
+                                  <input
+                                    type="radio"
+                                    name="billing-period-flat"
+                                    value={value}
+                                    checked={editingCard.billingPeriod === value}
+                                    onChange={() => setEditingCard({ ...editingCard, billingPeriod: value, pricingModel: 'fixed' })}
+                                    className="sr-only"
+                                  />
+                                </label>
                               ))}
                             </div>
 
@@ -1257,7 +1316,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                             )}
 
                             {(editingCard.billingPeriod === 'annual' || editingCard.billingPeriod === 'both') && (
-                              <div className="mb-4">
+                              <div>
                                 <label className="block text-sm font-medium text-g-700 mb-1.5">Annual price</label>
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-g-500">$</span>
@@ -1273,14 +1332,6 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                                 </div>
                               </div>
                             )}
-
-                            <button
-                              onClick={addRateCard}
-                              disabled={!editingCard.billingPeriod || (!editingCard.monthlyPrice && !editingCard.annualPrice)}
-                              className="w-full px-4 py-2.5 bg-blue text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-35"
-                            >
-                              Set pricing
-                            </button>
                           </>
                         )}
                       </>
