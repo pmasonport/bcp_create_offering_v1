@@ -1,0 +1,2670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BCP — Offerings</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --blue: #2560FF;
+  --blue-light: #EEF2FF;
+  --blue-bg: #F8FAFF;
+  --green: #10B981;
+  --amber: #F59E0B;
+  --red: #EF4444;
+  --g50: #F9FAFB;
+  --g100: #F3F4F6;
+  --g200: #E5E7EB;
+  --g300: #D1D5DB;
+  --g400: #9CA3AF;
+  --g500: #6B7280;
+  --g600: #4B5563;
+  --g700: #374151;
+  --g900: #111827;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'SF Mono', 'Fira Code', Menlo, monospace;
+}
+body { font-family: var(--font); background: #fff; color: var(--g900); display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ── Top bar ─────────────────────────── */
+.topbar { height: 48px; border-bottom: 1px solid var(--g200); display: flex; align-items: center; padding: 0 20px; flex-shrink: 0; background: #fff; position: fixed; top: 0; left: 0; right: 0; z-index: 20; overflow: visible; }
+.topbar-logo { display: flex; align-items: center; overflow: visible; }
+.topbar-logo svg { height: 16px; width: auto; display: block; overflow: visible; }
+.topbar-sep { width: 1px; height: 24px; background: var(--g200); margin: 0 16px; }
+.topbar-title { font-size: 13px; font-weight: 500; color: var(--g500); }
+
+/* ── Sidebar ─────────────────────────── */
+.layout { display: flex; flex: 1; padding-top: 48px; }
+.sidebar { width: 200px; flex-shrink: 0; border-right: 1px solid var(--g200); padding: 16px 0; display: flex; flex-direction: column; position: fixed; top: 48px; left: 0; bottom: 0; background: #fff; z-index: 10; overflow-y: auto; }
+.sidebar-logo { display: none; }
+.nav-section { }
+.nav-section-header { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--g500); padding: 7px 20px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: var(--font); transition: all 0.12s ease; user-select: none; }
+.nav-section-header:hover { color: var(--g700); background: var(--g50); }
+.nav-section-header.active { color: var(--blue); }
+.nav-section-header svg.section-icon { flex-shrink: 0; }
+.nav-section-header svg.chevron { flex-shrink: 0; margin-left: auto; transition: transform 0.15s ease; }
+.nav-section-header.collapsed svg.chevron { transform: rotate(-90deg); }
+.nav-section-body { overflow: hidden; transition: max-height 0.2s ease; max-height: 200px; }
+.nav-section-body.collapsed { max-height: 0; }
+.nav-sub-item { display: block; font-size: 13px; font-weight: 400; color: var(--g500); padding: 6px 20px 6px 40px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: var(--font); transition: all 0.12s ease; }
+.nav-sub-item:hover { color: var(--g700); background: var(--g50); }
+.nav-sub-item.active { color: var(--blue); background: var(--blue-bg); font-weight: 500; }
+.nav-sub-item.disabled { color: var(--g300); cursor: default; }
+.nav-sub-item.disabled:hover { background: none; color: var(--g300); }
+.nav-top-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--g500); padding: 7px 20px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: var(--font); transition: all 0.12s ease; }
+.nav-top-item:hover { color: var(--g700); background: var(--g50); }
+.nav-top-item.active { color: var(--blue); background: var(--blue-bg); }
+.nav-top-item.disabled { color: var(--g300); cursor: default; }
+.nav-top-item.disabled:hover { background: none; color: var(--g300); }
+
+/* ── Main content ────────────────────── */
+.main { margin-left: 200px; flex: 1; min-width: 0; background: var(--g50); min-height: 100vh; }
+.app { max-width: 960px; padding: 48px 40px 160px; }
+
+/* ── Shared ──────────────────────────── */
+.mono { font-family: var(--mono); }
+.back { font-size: 13px; color: var(--g400); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 24px; border: none; background: none; font-family: var(--font); }
+.back:hover { color: var(--g700); }
+.back span { color: var(--g900); font-weight: 500; }
+.page-title { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; color: var(--g900); }
+.page-sub { font-size: 14px; color: var(--g500); margin-top: 6px; line-height: 1.5; }
+.section-label { font-size: 12px; font-weight: 600; color: var(--g500); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 36px; margin-bottom: 12px; }
+.section-divider { height: 1px; background: var(--g200); margin: 36px 0 24px; }
+.badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 9999px; }
+.badge-bundle { background: var(--blue-light); color: var(--blue); }
+.badge-addon { background: var(--g100); color: var(--g500); }
+.badge-standalone { background: var(--g100); color: var(--g600); }
+.badge-sub { background: #ECFDF5; color: var(--green); }
+.badge-payg { background: #FEF3C7; color: #D97706; }
+.badge-prepaid { background: #FFF7ED; color: #EA580C; }
+.badge-account { background: #fff; color: var(--g400); border: 1px solid var(--g200); }
+.badge-draft { background: #FEF3C7; color: #92400E; border: 1px dashed #D97706; }
+.meta-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
+
+/* ── View toggle ─────────────────────── */
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+.toggle-group { display: flex; gap: 0; border: 1px solid var(--g200); border-radius: 4px; overflow: hidden; flex-shrink: 0; margin-top: 2px; }
+.toggle-btn { font-size: 12px; font-weight: 500; padding: 5px 12px; border: none; background: #fff; color: var(--g500); cursor: pointer; font-family: var(--font); display: flex; align-items: center; gap: 5px; transition: all 0.15s ease; }
+.toggle-btn + .toggle-btn { border-left: 1px solid var(--g200); }
+.toggle-btn.active { background: var(--g900); color: #fff; }
+.toggle-btn:hover:not(.active) { background: var(--g50); }
+
+/* ── Scope pills ─────────────────────── */
+.scope-pills { display: flex; gap: 4px; margin-top: 16px; margin-bottom: 4px; }
+.scope-pill { font-size: 12px; font-weight: 500; padding: 5px 14px; border-radius: 9999px; border: 1px solid var(--g200); background: #fff; color: var(--g500); cursor: pointer; font-family: var(--font); transition: all 0.12s ease; }
+.scope-pill.active { background: var(--g900); color: #fff; border-color: var(--g900); }
+.scope-pill:hover:not(.active) { border-color: var(--g300); background: var(--g50); }
+
+/* ── View 1: Group rows ──────────────── */
+.list-container { border: 1px solid var(--g200); border-radius: 6px; overflow: hidden; background: #fff; }
+.group-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--g200); cursor: pointer; transition: background 0.12s ease; background: #fff; }
+.group-row:last-child { border-bottom: none; }
+.group-row:hover { background: var(--g50); }
+.group-row-left { flex: 1; }
+.group-row-name { font-size: 14px; font-weight: 600; color: var(--g900); }
+.group-row-desc { font-size: 13px; color: var(--g500); margin-top: 2px; }
+.group-row-right { font-size: 12px; color: var(--g400); display: flex; align-items: center; gap: 4px; flex-shrink: 0; margin-left: 16px; }
+.group-row-standalone { font-size: 11px; color: var(--g400); margin-top: 2px; }
+
+/* ── View 1: Graph ───────────────────── */
+#graph-container { margin-top: 20px; border: 1px solid var(--g200); border-radius: 6px; background: #fff; overflow: hidden; }
+#graph-container svg { display: block; }
+.graph-node { cursor: pointer; }
+.graph-node rect { fill: #fff; stroke: var(--g200); stroke-width: 1; rx: 4; transition: stroke 0.15s ease; }
+.graph-node:hover rect { stroke: var(--blue); stroke-width: 1.5; }
+.graph-node .node-name { font-family: var(--font); font-size: 13px; font-weight: 600; fill: var(--g900); }
+.graph-node .node-count { font-family: var(--font); font-size: 11px; fill: var(--g400); }
+.graph-node.standalone rect { stroke: var(--g100); stroke-dasharray: 4 2; }
+.graph-edge { stroke: var(--g300); stroke-width: 1.5; fill: none; }
+.graph-arrow { fill: var(--g300); }
+.graph-legend { font-family: var(--font); font-size: 11px; fill: var(--g400); }
+
+/* ── View 2: Offering cards ──────────── */
+.offering-list { border: 1px solid var(--g200); border-radius: 6px; overflow: hidden; background: #fff; }
+.offering-card { display: flex; align-items: flex-start; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--g200); background: #fff; cursor: pointer; transition: background 0.12s ease; }
+.offering-card:last-child { border-bottom: none; }
+.offering-card:hover { background: var(--g50); }
+.offering-card.addon-card { background: #fff; }
+.offering-card.addon-card:hover { background: var(--g50); }
+.offering-card.draft { opacity: 0.55; }
+.oc-left { flex: 1; min-width: 0; }
+.oc-right { flex-shrink: 0; margin-left: 24px; display: flex; align-items: center; gap: 12px; }
+.oc-prices { text-align: right; }
+.oc-name { font-size: 14px; font-weight: 600; color: var(--g900); }
+.oc-slug { font-size: 12px; color: var(--g400); margin-top: 2px; }
+.oc-desc { font-size: 13px; color: var(--g500); margin-top: 4px; line-height: 1.4; }
+.oc-dep { font-size: 12px; color: var(--g400); margin-top: 4px; }
+.oc-price { font-size: 14px; font-weight: 600; color: var(--g900); }
+.oc-alt-price { font-size: 12px; font-weight: 400; color: var(--g400); margin-top: 2px; }
+
+/* Add-on sub-group header */
+.addon-subgroup { font-size: 12px; font-weight: 600; color: var(--g400); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 16px; margin-bottom: 10px; }
+.addon-divider { padding: 8px 20px; font-size: 11px; font-weight: 600; color: var(--g400); text-transform: uppercase; letter-spacing: 0.04em; background: var(--g50); border-bottom: 1px solid var(--g200); }
+
+/* ── View 3: Offering detail ─────────── */
+.detail-header { margin-bottom: 12px; background: #fff; border: 1px solid var(--g200); border-radius: 6px; padding: 24px; }
+.svc-card { border: 1px solid var(--g200); border-radius: 6px; padding: 0; margin-bottom: 14px; overflow: hidden; background: #fff; }
+.svc-header { padding: 14px 20px; background: var(--g50); border-bottom: 1px solid var(--g200); display: flex; justify-content: space-between; align-items: baseline; }
+.svc-name { font-size: 14px; font-weight: 600; color: var(--g900); }
+.svc-slug { font-size: 11px; color: var(--g400); margin-top: 1px; }
+.feat-table { width: 100%; }
+.feat-table th { text-align: left; font-size: 12px; font-weight: 500; color: var(--g400); padding: 8px 20px; border-bottom: 1px solid var(--g200); background: #fff; }
+.feat-table th:last-child { text-align: right; }
+.feat-table td { font-size: 13px; padding: 8px 20px; border-bottom: 1px solid var(--g100); color: var(--g700); }
+.feat-table tr:last-child td { border-bottom: none; }
+.feat-table td:last-child { text-align: right; }
+.feat-table td.feat-val { font-weight: 500; color: var(--g900); }
+.feat-table tr.dimmed td { opacity: 0.4; }
+.feat-tag { display: inline-block; font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 3px; margin-left: 6px; vertical-align: middle; }
+.feat-tag-mutable { background: #DBEAFE; color: #1E40AF; }
+.feat-tag-metered { background: #FEF3C7; color: #92400E; }
+.rc-card { border: 1px solid var(--g200); border-radius: 6px; padding: 14px 20px; margin-bottom: 8px; background: #fff; }
+.rc-line { font-size: 12px; color: var(--g600); }
+.rc-price { font-size: 14px; font-weight: 600; color: var(--g900); margin-top: 2px; }
+.lc-row { font-size: 13px; color: var(--g600); padding: 3px 0; }
+.lc-arrow { display: inline-block; width: 16px; }
+.const-row { font-size: 12px; color: var(--g600); padding: 2px 0; }
+
+/* ── Create flow ─────────────────────── */
+.select-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.select-card { padding: 20px; border: 1px solid var(--g200); border-radius: 4px; cursor: pointer; transition: all 0.15s ease; background: #fff; position: relative; }
+.select-card:hover { border-color: var(--g300); background: var(--g50); }
+.select-card.selected { border: 1.5px solid var(--blue); background: var(--blue-bg); }
+.select-card-icon { font-size: 20px; margin-bottom: 8px; }
+.select-card-title { font-size: 13px; font-weight: 600; color: var(--g900); }
+.select-card-desc { font-size: 12px; color: var(--g500); margin-top: 4px; line-height: 1.4; }
+.form-group { margin-top: 24px; }
+.form-label { font-size: 14px; font-weight: 500; color: var(--g700); margin-bottom: 7px; display: block; }
+.form-hint { font-size: 11px; color: var(--g400); font-weight: 400; }
+.form-input { width: 100%; padding: 11px 14px; border: 1px solid var(--g200); border-radius: 4px; font-size: 14px; font-family: var(--font); color: var(--g900); outline: none; transition: border-color 0.15s ease; }
+.form-input:focus { border-color: var(--blue); }
+.form-input.mono { font-family: var(--mono); font-size: 12px; color: var(--g500); }
+.form-textarea { width: 100%; padding: 11px 14px; border: 1px solid var(--g200); border-radius: 4px; font-size: 14px; font-family: var(--font); color: var(--g900); outline: none; resize: vertical; min-height: 56px; line-height: 1.5; transition: border-color 0.15s ease; }
+.form-textarea:focus { border-color: var(--blue); }
+.form-select { width: 100%; padding: 11px 14px; border: 1px solid var(--g200); border-radius: 4px; font-size: 14px; font-family: var(--font); color: var(--g900); background: #fff; outline: none; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+.pill-group { display: flex; gap: 4px; }
+.pill { font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 9999px; border: 1px solid var(--g200); background: #fff; color: var(--g600); cursor: pointer; font-family: var(--font); transition: all 0.12s ease; }
+.pill.selected { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+.pill:hover:not(.selected) { border-color: var(--g300); background: var(--g50); }
+.btn-primary { padding: 11px 22px; background: var(--blue); color: #fff; border: none; border-radius: 4px; font-size: 14px; font-weight: 500; font-family: var(--font); cursor: pointer; transition: opacity 0.15s ease; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-primary:disabled { background: var(--blue); color: #fff; opacity: 0.35; cursor: default; }
+.btn-secondary { padding: 11px 22px; background: #fff; color: var(--g700); border: 1px solid var(--g200); border-radius: 4px; font-size: 14px; font-weight: 500; font-family: var(--font); cursor: pointer; transition: all 0.15s ease; }
+.btn-secondary:hover { border-color: var(--g300); background: var(--g50); }
+.btn-row { display: flex; gap: 8px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--g200); justify-content: flex-end; }
+.wizard-step { border: 1px solid var(--g200); border-radius: 6px; padding: 24px; margin-top: 12px; background: #fff; }
+.wizard-step-collapsed { background: #fff; padding: 14px 20px; border: 1px solid var(--g200); border-radius: 6px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.wizard-step-collapsed:hover { border-color: var(--g300); }
+.wizard-stepper { display: flex; align-items: center; margin-top: 16px; margin-bottom: 24px; padding: 16px 20px; background: #fff; border: 1px solid var(--g200); border-radius: 6px; }
+.wizard-step-item { display: flex; align-items: center; gap: 10px; }
+.wizard-step-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.wizard-step-num.active { background: var(--blue); color: #fff; }
+.wizard-step-num.done { background: var(--green); color: #fff; }
+.wizard-step-num.pending { background: var(--g100); color: var(--g400); border: 1px solid var(--g200); }
+.wizard-step-label { font-size: 13px; }
+.wizard-step-label.active { font-weight: 600; color: var(--g900); }
+.wizard-step-label.done { font-weight: 500; color: var(--green); }
+.wizard-step-label.pending { font-weight: 400; color: var(--g400); }
+.wizard-step-line { flex: 1; height: 1px; background: var(--g200); margin: 0 16px; }
+.wizard-step-line.done { background: var(--green); }
+.ws-add-btn { padding: 14px 20px; border: 1px dashed var(--g300); border-radius: 6px; text-align: center; font-size: 13px; font-weight: 500; color: var(--g500); cursor: pointer; transition: all 0.15s ease; margin-bottom: 6px; background: #fff; }
+.ws-add-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+.ws-card { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border: 1px solid var(--g200); border-radius: 4px; margin-bottom: 6px; background: #fff; transition: border-color 0.15s ease; }
+.ws-card:hover { border-color: var(--g300); }
+.ws-card.addon { background: var(--g50); border-color: var(--g100); }
+.ws-card-left { flex: 1; min-width: 0; }
+.ws-card-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; margin-left: 16px; }
+.ws-card-name { font-size: 14px; font-weight: 600; color: var(--g900); }
+.ws-card-meta { font-size: 12px; color: var(--g400); margin-top: 2px; }
+.ws-status { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 9999px; }
+.ws-status.draft { background: #FEF3C7; color: #92400E; }
+.ws-status.active { background: #ECFDF5; color: var(--green); }
+.ws-menu-btn { width: 28px; height: 28px; border: 1px solid var(--g200); border-radius: 4px; background: #fff; cursor: pointer; font-size: 14px; color: var(--g400); display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; position: relative; }
+.ws-menu-btn:hover { border-color: var(--g300); color: var(--g700); }
+.ws-menu { position: absolute; top: 32px; right: 0; background: #fff; border: 1px solid var(--g200); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 5; min-width: 140px; padding: 4px 0; }
+.ws-menu-item { display: block; width: 100%; text-align: left; padding: 6px 14px; font-size: 13px; color: var(--g700); border: none; background: none; cursor: pointer; font-family: var(--font); }
+.ws-menu-item:hover { background: var(--g50); }
+.ws-menu-item.danger { color: var(--red); }
+.radio-group { display: flex; flex-direction: column; gap: 5px; }
+.radio-option { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border: 1px solid var(--g200); border-radius: 4px; cursor: pointer; transition: all 0.15s ease; }
+.radio-option:hover { border-color: var(--g300); }
+.radio-option.selected { border: 1.5px solid var(--blue); background: var(--blue-bg); }
+.radio-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--g300); flex-shrink: 0; margin-top: 1px; transition: all 0.15s ease; }
+.radio-option.selected .radio-dot { border: 5px solid var(--blue); }
+.radio-label { font-size: 13px; font-weight: 500; color: var(--g900); }
+.radio-desc { font-size: 12px; color: var(--g500); margin-top: 2px; }
+.dep-picker { margin-top: 12px; padding: 14px 16px; border: 1px solid var(--g100); border-radius: 4px; background: var(--g50); }
+.success-card { padding: 20px; border: 1px solid #BBF7D0; border-radius: 4px; background: #F0FDF4; margin-top: 16px; }
+.success-title { font-size: 14px; font-weight: 600; color: #166534; display: flex; align-items: center; gap: 8px; }
+.success-list { margin-top: 12px; }
+.success-list-item { font-size: 13px; color: var(--g600); padding: 4px 0; display: flex; align-items: center; gap: 8px; }
+.success-list-item::before { content: '○'; color: var(--g400); font-size: 10px; }
+.empty-zone { padding: 16px; border: 1px dashed var(--g200); border-radius: 6px; font-size: 12px; color: var(--g400); text-align: center; margin-bottom: 12px; background: #fff; }
+.create-menu-wrap { position: relative; display: inline-block; }
+.create-menu-dropdown { position: absolute; top: calc(100% + 4px); right: 0; background: #fff; border: 1px solid var(--g200); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 5; min-width: 220px; padding: 4px 0; }
+.create-menu-item { display: block; width: 100%; text-align: left; padding: 10px 16px; border: none; background: none; cursor: pointer; font-family: var(--font); transition: background 0.12s ease; }
+.create-menu-item:hover { background: var(--g50); }
+.create-menu-item-title { font-size: 13px; font-weight: 500; color: var(--g900); }
+.create-menu-item-desc { font-size: 12px; color: var(--g400); margin-top: 2px; }
+
+/* ── Tabs ─────────────────────────────── */
+.tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--g200); margin-top: 16px; margin-bottom: 20px; }
+.tab-item { font-size: 13px; font-weight: 500; color: var(--g500); padding: 10px 16px; cursor: pointer; border: none; background: none; font-family: var(--font); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.12s ease; }
+.tab-item:hover { color: var(--g700); }
+.tab-item.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+
+/* ── Environment dropdown ────────────── */
+.env-select { padding: 7px 12px 7px 24px; border: 1px solid var(--g200); border-radius: 4px; font-size: 12px; font-weight: 500; font-family: var(--font); color: var(--g700); background: #fff; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+.env-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; }
+.env-dot.prod, .env-dot.production { background: var(--green); }
+.env-dot.staging { background: var(--amber); }
+
+/* ── Drawer ───────────────────────────── */
+.drawer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.15); z-index: 30; opacity: 0; transition: opacity 0.2s ease; pointer-events: none; }
+.drawer-overlay.open { opacity: 1; pointer-events: auto; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 440px; background: #fff; border-left: 1px solid var(--g200); z-index: 31; transform: translateX(100%); transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); overflow-y: auto; }
+.drawer.open { transform: translateX(0); }
+.drawer-header { padding: 24px 28px 0; display: flex; justify-content: space-between; align-items: flex-start; }
+.drawer-title { font-size: 18px; font-weight: 600; color: var(--g900); letter-spacing: -0.01em; }
+.drawer-close { width: 28px; height: 28px; border: 1px solid var(--g200); border-radius: 4px; background: #fff; cursor: pointer; font-size: 14px; color: var(--g400); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.drawer-close:hover { border-color: var(--g300); color: var(--g700); }
+.drawer-body { padding: 20px 28px 36px; }
+.drawer-section { margin-top: 24px; }
+.drawer-section-label { font-size: 12px; font-weight: 600; color: var(--g500); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+.drawer-row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--g100); }
+.drawer-row:last-child { border-bottom: none; }
+.drawer-row-label { font-size: 13px; color: var(--g600); }
+.drawer-row-value { font-size: 13px; font-weight: 500; color: var(--g900); }
+.clickable-row { cursor: pointer; transition: background 0.12s ease; border-radius: 3px; }
+.clickable-row:hover { background: var(--g50); }
+tr.clickable-row { margin: 0 -4px; padding-left: 4px; padding-right: 4px; }
+
+/* ── Animations ──────────────────────── */
+.fade-in { animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 95 19" fill="none"><path fill="#000" d="M23.61 7.811c-.589-.396-2.135-.565-3.259-.262-.06-1.12-.638-2.063-1.694-2.886l-.39-.263-.261.394c-.512.777-.728 1.813-.652 2.755.06.58.262 1.232.652 1.706-1.463.848-2.812.656-8.784.656H.002c-.027 1.348.19 3.942 1.84 6.054q.273.35.598.676c1.341 1.343 3.368 2.328 6.398 2.33 4.622.005 8.583-2.494 10.992-8.535.793.012 2.885.142 3.91-1.837.025-.033.26-.525.26-.525zM6.02 6.578H3.426v2.593h2.592zm3.349 0H6.776v2.593h2.593zm3.35 0h-2.593v2.593h2.592zm3.349 0h-2.593v2.593h2.593zm-13.398 0H.077v2.593H2.67zm3.35-3.274H3.426v2.592h2.592zm3.349 0H6.776v2.592h2.593zm3.35 0h-2.593v2.592h2.592zm0-3.275h-2.593V2.62h2.592zM34.434 10.934c-.144-.252-.612-.954-1.746-.954-1.206 0-1.998 1.026-1.998 2.358 0 1.35.792 2.376 2.016 2.376 1.17 0 1.656-.738 1.764-.954h2.808c-.108 1.296-1.35 3.474-4.644 3.474-2.754 0-4.878-1.926-4.878-4.896 0-2.952 2.124-4.896 4.842-4.896 3.294 0 4.536 2.142 4.68 3.492zm8.2-3.492c2.916 0 5.112 1.998 5.112 4.896 0 2.88-2.196 4.896-5.112 4.896-2.934 0-5.112-2.016-5.112-4.896 0-2.898 2.178-4.896 5.112-4.896m0 7.254c1.314 0 2.178-1.026 2.178-2.358s-.864-2.358-2.178-2.358-2.196 1.026-2.196 2.358.882 2.358 2.196 2.358M48.706 17V7.676h2.916v1.44c.36-.612 1.386-1.638 3.006-1.638 2.322 0 3.798 1.674 3.798 4.032V17h-2.934v-4.896c0-1.242-.756-2.034-1.926-2.034s-1.944.81-1.944 2.034V17zm15.638-3.438c-.504-.036-.828-.072-1.314-.108-2.287-.144-3.745-1.116-3.745-3.042 0-1.854 1.639-2.988 4.339-2.988 3.51 0 4.482 1.818 4.68 2.718h-3.079c-.125-.162-.54-.648-1.62-.648-.863 0-1.35.288-1.35.738 0 .378.288.666 1.098.738.414.054.738.072 1.224.108 2.808.198 3.889 1.17 3.889 3.114 0 1.89-1.476 3.06-4.5 3.06-3.636 0-4.717-2.034-4.879-2.898h3.15c.072.198.505.792 1.728.792 1.026 0 1.513-.324 1.513-.774 0-.432-.252-.738-1.134-.81m9.59-6.12c2.917 0 5.113 1.998 5.113 4.896 0 2.88-2.196 4.896-5.112 4.896-2.934 0-5.112-2.016-5.112-4.896 0-2.898 2.178-4.896 5.112-4.896m0 7.254c1.315 0 2.179-1.026 2.179-2.358s-.864-2.358-2.178-2.358-2.196 1.026-2.196 2.358.882 2.358 2.196 2.358M80.045 17V3.752h2.933V17zm8.92-9.558c2.987 0 4.985 1.908 4.985 4.95v.504h-7.092c.144 1.17 1.026 2.052 2.304 2.052 1.134 0 1.674-.522 1.8-.72h2.898c-.144 1.116-1.476 3.006-4.698 3.006-3.168 0-5.184-2.052-5.184-4.896 0-2.952 2.052-4.896 4.986-4.896m0 2.124c-1.063 0-1.8.594-2.053 1.548h4.104c-.252-.972-1.008-1.548-2.052-1.548"/></svg></div>
+</header>
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer"></div>
+<div class="layout">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main">
+    <div class="app" id="app"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════
+
+const GROUPS = [
+  { id:"dsop", name:"Docker Suite of Products (DSoP)", short:"DSoP", desc:"Core subscription tiers", standalone:false },
+  { id:"build-cloud", name:"Build Cloud", short:"Build Cloud", desc:"Additional build minutes", standalone:false },
+  { id:"testcontainers", name:"Testcontainers Cloud", short:"TC Cloud", desc:"Cloud runtime minutes", standalone:false },
+  { id:"dhi", name:"Docker Hardened Images", short:"DHI", desc:"Secure container images", standalone:false },
+  { id:"premium-support", name:"Docker Premium Support", short:"Premium Support", desc:"Premium support and TAM services", standalone:false },
+  { id:"gordon", name:"Gordon", short:"Gordon", desc:"Docker AI assistant", standalone:false },
+  { id:"sandboxes", name:"Docker Sandboxes", short:"Sandboxes", desc:"On-demand ephemeral compute environments", standalone:true },
+];
+
+const OFFERINGS = [
+  // DSoP
+  { id:"personal", group:"dsop", name:"Docker Personal", slug:"docker-personal", desc:"Free tier for individual developers", pkg:"bundle", mon:"subscription", acct:"user", price:"$0", cycle:"free", status:"active" },
+  { id:"pro", group:"dsop", name:"Docker Pro", slug:"docker-pro", desc:"Professional tier for individual developers", pkg:"bundle", mon:"subscription", acct:"user", price:"$11/mo", cycle:"monthly", altPrice:"$108/yr", altCycle:"annual", status:"active" },
+  { id:"team", group:"dsop", name:"Docker Team", slug:"docker-team", desc:"Collaboration tier for small teams ", pkg:"bundle", mon:"subscription", acct:"organization", price:"$16/seat", cycle:"monthly", altPrice:"$180/seat", altCycle:"annual", status:"active" },
+  { id:"business", group:"dsop", name:"Docker Business", slug:"docker-business", desc:"Enterprise tier with security and admin features ", pkg:"bundle", mon:"subscription", acct:"organization", price:"$24/seat", cycle:"annual only", status:"active" },
+  // Build Cloud
+  { id:"bc-min", group:"build-cloud", name:"Build Cloud Minutes", slug:"build-cloud-minutes", desc:"Prepaid build minutes, expires end of subscription period", pkg:"add_on", mon:"prepaid", acct:"both", price:"$25/500-min", cycle:"immediate", status:"active" },
+  // TC
+  { id:"tc-pre", group:"testcontainers", name:"TC Cloud Minutes — Prepaid", slug:"tc-prepaid-minutes", desc:"Prepaid runtime minutes (block of 100)", pkg:"add_on", mon:"prepaid", acct:"both", price:"$3/100-min", cycle:"immediate", status:"active" },
+  { id:"tc-od", group:"testcontainers", name:"TC Cloud Minutes — On-Demand", slug:"tc-on-demand-minutes", desc:"On-demand runtime billed at end of period", pkg:"add_on", mon:"payg", acct:"both", price:"$0.04/min", cycle:"arrears", status:"active" },
+  // DHI
+  { id:"dhi-free", group:"dhi", name:"DHI — Free", slug:"dhi-free", desc:"Hardened images, SBOMs, SLSA provenance, Apache 2.0", pkg:"standalone", mon:"subscription", acct:"both", price:"$0", cycle:"free", status:"active" },
+  { id:"dhi-sel", group:"dhi", name:"DHI — Select", slug:"dhi-select-org", desc:"Production-ready security with compliance support", pkg:"standalone", mon:"subscription", acct:"organization", price:"$5,000/repo", cycle:"annual", status:"active" },
+  { id:"dhi-ent-r", group:"dhi", name:"DHI — Enterprise (Per-Repo)", slug:"dhi-enterprise-per-repo", desc:"CVE SLAs, FIPS/STIG, compliance, mirroring", pkg:"standalone", mon:"subscription", acct:"organization", price:"$8,000/repo", cycle:"annual", status:"active" },
+  { id:"dhi-ent-f", group:"dhi", name:"DHI — Enterprise (Full Catalog)", slug:"dhi-enterprise-full-catalog", desc:"Full DHI catalog access, unlimited repos", pkg:"standalone", mon:"subscription", acct:"organization", price:"$200,000", cycle:"annual · fixed", status:"active" },
+  { id:"dhi-els-r", group:"dhi", name:"DHI — ELS (Per-Repo)", slug:"dhi-els-per-repo", desc:"+5 yrs hardened updates for EOL software", pkg:"add_on", mon:"subscription", acct:"organization", price:"$8,000/repo", cycle:"annual", status:"active", requires:"DHI Enterprise (Per-Repo)" },
+  { id:"dhi-els-f", group:"dhi", name:"DHI — ELS (Full Catalog)", slug:"dhi-els-full-catalog", desc:"+5 yrs hardened updates for EOL software", pkg:"add_on", mon:"subscription", acct:"organization", price:"$200,000", cycle:"annual · fixed", status:"active", requires:"DHI Enterprise (Full Catalog)" },
+  // Premium Support
+  { id:"prem", group:"premium-support", name:"Premium Support", slug:"premium-support-org", desc:"24×7 support with priority SLAs, escalation, live troubleshooting, and RCA", pkg:"add_on", mon:"subscription", acct:"organization", price:"$40,000", cycle:"annual · fixed", status:"active", requires:"Docker Business or DHI Enterprise (Per-Repo) or (Full Catalog)" },
+  { id:"tam", group:"premium-support", name:"TAM Service", slug:"tam-org", desc:"Technical Account Manager — strategic guidance and proactive support", pkg:"add_on", mon:"subscription", acct:"organization", price:"$60,000", cycle:"annual · fixed", status:"active", requires:"Premium Support" },
+  // Gordon
+  { id:"g-pro", group:"gordon", name:"Gordon Pro", slug:"gordon-pro", desc:"2× credits ($18 budget), excess enabled", pkg:"add_on", mon:"subscription", acct:"user", price:"$20/mo", cycle:"monthly", status:"active" },
+  { id:"g-max", group:"gordon", name:"Gordon Max", slug:"gordon-max", desc:"5× credits ($45 budget), excess enabled", pkg:"add_on", mon:"subscription", acct:"user", price:"$50/mo", cycle:"monthly", status:"active" },
+  { id:"g-ult", group:"gordon", name:"Gordon Ultra", slug:"gordon-ultra", desc:"20× credits ($180 budget), excess enabled", pkg:"add_on", mon:"subscription", acct:"user", price:"$200/mo", cycle:"monthly", status:"active" },
+  { id:"g-ent", group:"gordon", name:"Gordon Enterprise", slug:"gordon-enterprise", desc:"Unlimited usage, PAYG per request", pkg:"add_on", mon:"payg", acct:"organization", price:"$0.01/req", cycle:"arrears", status:"active" },
+  { id:"g-pro-o", group:"gordon", name:"Gordon Pro (Org)", slug:"gordon-pro-org", desc:"Org variant — pricing TBD", pkg:"add_on", mon:"subscription", acct:"organization", price:"pricing TBD", cycle:"—", status:"draft" },
+  { id:"g-max-o", group:"gordon", name:"Gordon Max (Org)", slug:"gordon-max-org", desc:"Org variant — pricing TBD", pkg:"add_on", mon:"subscription", acct:"organization", price:"pricing TBD", cycle:"—", status:"draft" },
+  { id:"g-ult-o", group:"gordon", name:"Gordon Ultra (Org)", slug:"gordon-ultra-org", desc:"Org variant — pricing TBD", pkg:"add_on", mon:"subscription", acct:"organization", price:"pricing TBD", cycle:"—", status:"draft" },
+  // Sandboxes
+  { id:"sbx", group:"sandboxes", name:"Docker Sandboxes", slug:"sandboxes-payg", desc:"On-demand ephemeral compute — CPU, memory, storage metered", pkg:"standalone", mon:"payg", acct:"both", price:"from $0.035/hr", cycle:"arrears", status:"active" },
+];
+
+// Which external groups' add-ons show on a given group's detail page
+const EXTERNAL_ADDONS = {
+  "dsop": [
+    { sourceGroup:"build-cloud", dep:"requires Pro, Team, or Business" },
+    { sourceGroup:"testcontainers", dep:"requires Pro, Team, or Business" },
+    { sourceGroup:"gordon", dep:"requires any DSoP subscription" },
+    { sourceGroup:"premium-support", dep:"requires Docker Business" },
+  ],
+  "dhi": [
+    { sourceGroup:"premium-support", dep:"requires DHI Enterprise (Per-Repo) or (Full Catalog)" },
+  ]
+};
+
+// Graph edges (from dependent → to required)
+const GRAPH_EDGES = [
+  { from:"build-cloud", to:"dsop" },
+  { from:"testcontainers", to:"dsop" },
+  { from:"gordon", to:"dsop" },
+  { from:"premium-support", to:"dsop" },
+  { from:"premium-support", to:"dhi" },
+];
+
+// Explicit dependency mapping: add-on ID → array of required offering IDs
+const OFFERING_DEPS = {
+  "dhi-els-r": ["dhi-ent-r"],
+  "dhi-els-f": ["dhi-ent-f"],
+  "prem": ["business", "dhi-ent-r", "dhi-ent-f"],
+  "tam": ["prem"],
+  "bc-min": ["pro", "team", "business"],
+  "tc-pre": ["pro", "team", "business"],
+  "tc-od": ["pro", "team", "business"],
+  "g-pro": ["personal", "pro", "team", "business"],
+  "g-max": ["personal", "pro", "team", "business"],
+  "g-ult": ["personal", "pro", "team", "business"],
+  "g-ent": ["personal", "pro", "team", "business"],
+  "g-pro-o": ["personal", "pro", "team", "business"],
+  "g-max-o": ["personal", "pro", "team", "business"],
+  "g-ult-o": ["personal", "pro", "team", "business"],
+};
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function offeringsForGroup(gid) { return OFFERINGS.filter(o => o.group === gid); }
+function countForGroup(gid) { return offeringsForGroup(gid).length; }
+function countOfferings(gid) { return offeringsForGroup(gid).filter(o => o.pkg !== 'add_on').length; }
+function countAddonsInternal(gid) { return offeringsForGroup(gid).filter(o => o.pkg === 'add_on').length; }
+function countAddonsExternal(gid) {
+  const ext = EXTERNAL_ADDONS[gid];
+  if (!ext) return 0;
+  let count = 0;
+  ext.forEach(e => { count += offeringsForGroup(e.sourceGroup).length; });
+  return count;
+}
+function countAddons(gid) { return countAddonsInternal(gid) + countAddonsExternal(gid); }
+function groupById(gid) { return GROUPS.find(g => g.id === gid); }
+
+function pkgBadge(pkg) {
+  const m = { bundle:"badge-bundle", add_on:"badge-addon", standalone:"badge-standalone" };
+  const l = { bundle:"bundle", add_on:"add-on", standalone:"standalone" };
+  return `<span class="badge ${m[pkg]}">${l[pkg]}</span>`;
+}
+function monBadge(mon, price) {
+  if (price === '$0' || price === 'free') return `<span class="badge" style="background:#F0FDF4;color:#166534">free</span>`;
+  const m = { subscription:"badge-sub", payg:"badge-payg", prepaid:"badge-prepaid", one_time:"badge-standalone" };
+  return `<span class="badge ${m[mon] || 'badge-standalone'}">${mon === 'one_time' ? 'one-time' : mon}</span>`;
+}
+function acctBadge(acct) {
+  if (acct === "both") return `<span class="badge badge-account">user</span><span class="badge badge-account">org</span>`;
+  return `<span class="badge badge-account">${acct === "organization" ? "org" : acct}</span>`;
+}
+function draftBadge(s) { return s === "draft" ? `<span class="badge badge-draft">draft</span>` : ""; }
+
+// Feature name lookup from SERVICE_FEATURES
+function featureName(svcSlug, featSlug) {
+  const feats = SERVICE_FEATURES[svcSlug];
+  if (feats) {
+    const f = feats.find(x => x.slug === featSlug);
+    if (f) return f.name;
+  }
+  // Fallback: humanize the slug
+  return featSlug.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+function featureMeta(svcSlug, featSlug) {
+  const feats = SERVICE_FEATURES[svcSlug];
+  if (feats) return feats.find(x => x.slug === featSlug);
+  return null;
+}
+
+function openDrawer(html) {
+  document.getElementById('drawer').innerHTML = html;
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer-overlay').classList.add('open');
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+}
+
+function openFeatureDrawer(svcId, featSlug) {
+  const svc = SERVICES.find(s => s.id === svcId);
+  const feats = SERVICE_FEATURES[svcId] || [];
+  const f = feats.find(x => x.slug === featSlug);
+  if (!f) return;
+  openDrawer(`
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-title">${f.name}</div>
+        <div class="mono" style="font-size:12px;color:var(--g400);margin-top:4px">${f.slug}</div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <p style="font-size:13px;color:var(--g500);line-height:1.5">${f.desc}</p>
+      <div class="drawer-section">
+        <div class="drawer-section-label">Configuration</div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">Service</span>
+          <span class="drawer-row-value">${svc ? svc.name : svcId}</span>
+        </div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">Type</span>
+          <span class="drawer-row-value"><span class="badge ${f.type==='boolean'?'badge-sub':f.type==='integer'?'badge-payg':'badge-standalone'}">${f.type}</span></span>
+        </div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">Mutable</span>
+          <span class="drawer-row-value">${f.mutable ? '✓ Yes — value can change through purchase/ops' : '✗ No — fixed at offering level'}</span>
+        </div>
+        ${f.metering ? `<div class="drawer-row">
+          <span class="drawer-row-label">Metering</span>
+          <span class="drawer-row-value">${f.metering}</span>
+        </div>` : ''}
+      </div>
+    </div>
+  `);
+}
+
+function openRateCardDrawer(rc, offeringName) {
+  openDrawer(`
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-title">Rate Card</div>
+        <div style="font-size:12px;color:var(--g400);margin-top:4px">${offeringName}</div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section" style="margin-top:8px">
+        <div class="drawer-section-label">Pricing</div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">Price</span>
+          <span class="drawer-row-value mono" style="font-size:14px;font-weight:600">${rc.price}</span>
+        </div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">Model</span>
+          <span class="drawer-row-value">${rc.label.split(' · ')[1] || '—'}</span>
+        </div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">Billing timing</span>
+          <span class="drawer-row-value">${rc.label.split(' · ')[2] || '—'}</span>
+        </div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">Billing cycle</span>
+          <span class="drawer-row-value">${rc.label.split(' · ')[3] || '—'}</span>
+        </div>
+        ${rc.external ? `<div class="drawer-row">
+          <span class="drawer-row-label">External</span>
+          <span class="drawer-row-value">${rc.external}</span>
+        </div>` : ''}
+      </div>
+    </div>
+  `);
+}
+
+function filterByScope(list, scope) {
+  if (scope === "all") return list;
+  if (scope === "user") return list.filter(o => o.acct === "user" || o.acct === "both");
+  if (scope === "org") return list.filter(o => o.acct === "organization" || o.acct === "both");
+  return list;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ROUTER
+// ═══════════════════════════════════════════════════════════════
+
+let state = { view: "index", mode: "list", groupId: null, offeringId: null, serviceId: null, scope: "all" };
+
+// Create flow state
+let createState = {
+  step: null,          // 'upfront', 'newgroup', 'workspace', 'wizard'
+  wizardStep: 1,       // 1=basics, 2=pricing, 3=features
+  workspaceGroupId: null,
+  isNewGroup: false,
+  isAddon: false,
+  duplicateFrom: null,
+  // Form values
+  groupName: '', groupSlug: '', groupDesc: '',
+  offName: '', offSlug: '', offDesc: '',
+  offPkg: '',          // bundle, standalone, add_on
+  offAcct: 'organization',
+  offChannel: 'both',
+  offMon: '',          // subscription, payg, prepaid, one_time
+  offFreeOrPaid: '',
+  offPricingModel: '', // fixed, per_unit, block, graduated
+  offPrice: '', offAnnualPrice: '',
+  offBillingCycle: 'both',
+  offFeature: '',
+  offDep: 'group',     // group, specific, other
+  offDepTarget: '',
+  // Pricing state
+  rateCards: [],       // Array of saved rate cards
+  rcFeature: '',       // Selected feature slug (subscription/prepaid/one-time)
+  rcMeter: '',         // Selected meter id (PAYG)
+  rcResource: '',      // Selected resource id
+  rcTiers: [{from:'0',to:'1000',perUnit:'0',fixed:'0'},{from:'1001',to:'∞',perUnit:'',fixed:'0'}],
+  rcBatchPrices: {},   // resource_id → price (for PAYG batch)
+  // Workspace offerings (created during this session)
+  wsOfferings: [],
+  activeMenu: null,
+};
+
+function resetCreateState() {
+  createState = { step:null, wizardStep:1, workspaceGroupId:null, isNewGroup:false, isAddon:false, duplicateFrom:null,
+    groupName:'',groupSlug:'',groupDesc:'', offName:'',offSlug:'',offDesc:'',
+    offPkg:'',offAcct:'organization',offChannel:'both',offMon:'',offFreeOrPaid:'',
+    offPricingModel:'',offPrice:'',offAnnualPrice:'',offBillingCycle:'both',offFeature:'',
+    offDep:'group',offDepTarget:'',
+    rateCards:[],rcFeature:'',rcMeter:'',rcResource:'',
+    rcTiers:[{from:'0',to:'1000',perUnit:'0',fixed:'0'},{from:'1001',to:'∞',perUnit:'',fixed:'0'}],
+    rcBatchPrices:{},
+    wsOfferings:[], activeMenu:null };
+}
+
+function resetWizard() {
+  createState.wizardStep = 1;
+  createState.offName = ''; createState.offSlug = ''; createState.offDesc = '';
+  createState.offPkg = ''; createState.offAcct = 'organization'; createState.offChannel = 'both';
+  createState.offMon = ''; createState.offFreeOrPaid = ''; createState.offPricingModel = '';
+  createState.offPrice = ''; createState.offAnnualPrice = ''; createState.offBillingCycle = 'both';
+  createState.offFeature = ''; createState.offDep = 'group'; createState.offDepTarget = '';
+  createState.duplicateFrom = null;
+  createState.rateCards = []; createState.rcFeature = ''; createState.rcMeter = '';
+  createState.rcResource = '';
+  createState.rcTiers = [{from:'0',to:'1000',perUnit:'0',fixed:'0'},{from:'1001',to:'∞',perUnit:'',fixed:'0'}];
+  createState.rcBatchPrices = {};
+  createState.isAddon = false;
+}
+
+function goBackFromWizard() {
+  if (createState._launchedFromGroup) {
+    navigate({view:'group', groupId:createState._launchedFromGroup});
+    resetCreateState();
+  } else if (createState.step === 'wizard' && createState.wsOfferings.length > 0) {
+    navCreate({step:'workspace'});
+  } else {
+    navigate({view:'index'});
+    resetCreateState();
+  }
+}
+
+function slugify(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+function handleGroupChange(val) {
+  if (val === '__new') {
+    createState.isNewGroup = true;
+    createState.workspaceGroupId = null;
+    createState.groupName = '';
+    createState.groupSlug = '';
+  } else {
+    const g = groupById(val);
+    createState.isNewGroup = false;
+    createState.workspaceGroupId = val;
+    createState.groupName = g ? g.name : '';
+    createState.groupSlug = g ? (g.slug || g.id) : '';
+  }
+  render(true);
+}
+function updateS2Btn() { var b=document.getElementById('wizard-s2-btn'); if(b) b.disabled=!(createState.offFreeOrPaid==='free'||(createState.offMon&&createState.offPrice)); }
+function togglePill(el, stateKey, val) {
+  createState[stateKey] = val;
+  el.parentElement.querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function toggleSelectCard(el, stateKey, val) {
+  createState[stateKey] = val;
+  el.parentElement.querySelectorAll('.select-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+let _shouldScroll = false;
+
+function navigate(newState) {
+  Object.assign(state, newState);
+  if (newState.view && !['create'].includes(newState.view)) { createState.step = null; }
+  closeDrawer();
+  _shouldScroll = true;
+  render();
+}
+
+function navCreate(updates) {
+  Object.assign(createState, updates);
+  state.view = 'create';
+  _shouldScroll = true;
+  render();
+}
+
+function currentPage() {
+  if (state.view === 'create') return "offerings";
+  if (["index","group","offering"].includes(state.view)) return "offerings";
+  if (["features","service"].includes(state.view)) return "features";
+  if (state.view === "meters") return "meters";
+  return "offerings";
+}
+
+let currentEnv = 'staging';
+
+// ═══════════════════════════════════════════════════════════════
+// VIEW 1: GROUP INDEX
+// ═══════════════════════════════════════════════════════════════
+
+function renderIndex() {
+  const isGraph = state.mode === "graph";
+  let h = `
+    <div class="header-row">
+      <div>
+        <h1 class="page-title">Offerings</h1>
+        <p class="page-sub">${GROUPS.length} offering groups${isGraph ? " · dependency topology" : ""}</p>
+      </div>
+      <div class="create-menu-wrap">
+        <button class="btn-primary" onclick="toggleCreateMenu()">+ Create
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style="margin-left:2px"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <div class="create-menu-dropdown" id="create-menu" style="display:none">
+          <button class="create-menu-item" onclick="closeCreateMenu(); launchWizardNew();">
+            <div class="create-menu-item-title">New offering group</div>
+            <div class="create-menu-item-desc">A new collection of related offerings</div>
+          </button>
+          <button class="create-menu-item" onclick="closeCreateMenu(); launchCreateOffering();">
+            <div class="create-menu-item-title">New offering</div>
+            <div class="create-menu-item-desc">Add an offering to an existing group</div>
+          </button>
+          <button class="create-menu-item" onclick="closeCreateMenu(); launchCreateAddon();">
+            <div class="create-menu-item-title">New add-on</div>
+            <div class="create-menu-item-desc">Add an add-on that depends on existing offerings</div>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:inline-block">
+      <div class="toggle-group">
+        <button class="toggle-btn ${!isGraph?"active":""}" onclick="navigate({mode:'list'})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          List
+        </button>
+        <button class="toggle-btn ${isGraph?"active":""}" onclick="navigate({mode:'graph'})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><line x1="5" y1="8" x2="12" y2="16"/><line x1="19" y1="8" x2="12" y2="16"/></svg>
+          Graph
+        </button>
+      </div>
+    </div>`;
+
+  if (isGraph) {
+    h += `<div id="graph-container"></div>`;
+  } else {
+    h += `<div class="list-container" style="margin-top:16px">`;
+    GROUPS.forEach((g, i) => {
+      const off = countOfferings(g.id);
+      const addons = countAddons(g.id);
+      const countParts = [];
+      if (off > 0) countParts.push(`${off} offering${off!==1?"s":""}`);
+      if (addons > 0) countParts.push(`${addons} add-on${addons!==1?"s":""}`);
+      const countLabel = countParts.join(' · ') || '0 offerings';
+      h += `
+        <div class="group-row fade-in" style="animation-delay:${i*40}ms" onclick="navigate({view:'group',groupId:'${g.id}'})">
+          <div class="group-row-left">
+            <div class="group-row-name">${g.name}</div>
+            <div class="group-row-desc">${g.desc}</div>
+            ${g.standalone ? '<div class="group-row-standalone">standalone — no dependencies</div>' : ''}
+          </div>
+          <div class="group-row-right">
+            ${countLabel}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>`;
+    });
+    h += `</div>`;
+  }
+  return h;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VIEW 1: GRAPH
+// ═══════════════════════════════════════════════════════════════
+
+function renderGraph() {
+  const container = document.getElementById("graph-container");
+  if (!container) return;
+
+  const W = container.clientWidth || 680;
+  const H = 500;
+  const NW = 160, NH = 52;
+
+  // Manual hierarchical layout
+  const positions = {
+    "dsop":             { x: W/2, y: 55 },
+    "build-cloud":      { x: W/2 - 210, y: 195 },
+    "testcontainers":   { x: W/2 - 70, y: 195 },
+    "gordon":           { x: W/2 + 70, y: 195 },
+    "premium-support":  { x: W/2 + 210, y: 195 },
+    "dhi":              { x: W/2 + 210, y: 370 },
+    "sandboxes":        { x: W/2 - 210, y: 370 },
+  };
+
+  const svg = d3.select(container).html("").append("svg").attr("width", W).attr("height", H);
+
+  // Arrow marker
+  svg.append("defs").append("marker")
+    .attr("id","arrowhead").attr("viewBox","0 0 10 7").attr("refX",10).attr("refY",3.5)
+    .attr("markerWidth",8).attr("markerHeight",6).attr("orient","auto")
+    .append("polygon").attr("points","0 0, 10 3.5, 0 7").attr("class","graph-arrow");
+
+  // Edges
+  GRAPH_EDGES.forEach(e => {
+    const from = positions[e.from], to = positions[e.to];
+    if (!from || !to) return;
+    // Calculate edge points from center of nodes
+    const fx = from.x, fy = from.y, tx = to.x, ty = to.y;
+    // Offset to border of rectangles
+    const angle = Math.atan2(ty - fy, tx - fx);
+    const sx = fx, sy = fy - NH/2; // top of "from" node for upward edges
+    const ex = tx, ey = ty + NH/2; // bottom of "to" node
+
+    // Simple: draw from top of dependent to bottom of required (reversed for "requires" = arrow points up)
+    // "from" depends on "to", so arrow goes from "from" up to "to"
+    const startY = Math.min(fy, ty) === fy ? fy + NH/2 : fy - NH/2;
+    const endY = Math.min(fy, ty) === fy ? ty - NH/2 : ty + NH/2;
+
+    svg.append("line")
+      .attr("class","graph-edge")
+      .attr("x1", fx).attr("y1", fy - NH/2)
+      .attr("x2", tx).attr("y2", ty + NH/2)
+      .attr("marker-end","url(#arrowhead)");
+  });
+
+  // Nodes
+  GROUPS.forEach(g => {
+    const pos = positions[g.id];
+    if (!pos) return;
+    const off = countOfferings(g.id);
+    const addons = countAddons(g.id);
+    const parts = [];
+    if (off > 0) parts.push(`${off} off.`);
+    if (addons > 0) parts.push(`${addons} add-on${addons!==1?'s':''}`);
+    const label = parts.join(' · ') || '0 offerings';
+    const node = svg.append("g")
+      .attr("class", `graph-node ${g.standalone ? "standalone" : ""}`)
+      .attr("transform", `translate(${pos.x - NW/2}, ${pos.y - NH/2})`)
+      .style("cursor","pointer")
+      .on("click", () => navigate({view:"group", groupId:g.id}));
+
+    node.append("rect").attr("width", NW).attr("height", NH);
+    node.append("text").attr("class","node-name").attr("x", NW/2).attr("y", 22).attr("text-anchor","middle").text(g.short);
+    node.append("text").attr("class","node-count").attr("x", NW/2).attr("y", 38).attr("text-anchor","middle").text(label);
+  });
+
+  // Legend
+  svg.append("line").attr("x1",20).attr("y1",H-20).attr("x2",44).attr("y2",H-20).attr("class","graph-edge").attr("marker-end","url(#arrowhead)");
+  svg.append("text").attr("class","graph-legend").attr("x",50).attr("y",H-16).text("requires (dependency)");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VIEW 2: GROUP DETAIL
+// ═══════════════════════════════════════════════════════════════
+
+function renderGroupDetail() {
+  const g = groupById(state.groupId);
+  if (!g) return "<p>Group not found</p>";
+  const scope = state.scope || "all";
+  const allOfferings = offeringsForGroup(g.id);
+  const offerings = filterByScope(allOfferings.filter(o => o.pkg !== "add_on"), scope);
+  const internalAddons = filterByScope(allOfferings.filter(o => o.pkg === "add_on"), scope);
+  const extGroups = EXTERNAL_ADDONS[g.id] || [];
+
+  let h = `
+    <button class="back" onclick="navigate({view:'index',groupId:null,scope:'all'})">
+      ← Offerings / <span>${g.short}</span>
+    </button>
+    <div class="header-row">
+      <div>
+        <h1 class="page-title">${g.name}</h1>
+        ${g.desc ? `<p class="page-sub">${g.desc}</p>` : ''}
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-primary" onclick="launchWizardFromGroup('${g.id}', false)">+ Add offering</button>
+        <button class="btn-secondary" onclick="launchWizardFromGroup('${g.id}', true)">+ Add add-on</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:16px;margin-bottom:4px">
+      <span style="font-size:12px;font-weight:500;color:var(--g400)">Filter</span>
+      <div class="scope-pills" style="margin-top:0;margin-bottom:0">
+        <button class="scope-pill ${scope==="all"?"active":""}" onclick="navigate({scope:'all'})">All accounts</button>
+        <button class="scope-pill ${scope==="user"?"active":""}" onclick="navigate({scope:'user'})">User</button>
+        <button class="scope-pill ${scope==="org"?"active":""}" onclick="navigate({scope:'org'})">Organization</button>
+      </div>
+    </div>`;
+
+  const totalVisible = offerings.length + internalAddons.length;
+  let externalCount = 0;
+  extGroups.forEach(ext => { externalCount += filterByScope(offeringsForGroup(ext.sourceGroup), scope).length; });
+
+  // Empty state
+  if (totalVisible === 0 && externalCount === 0) {
+    h += `
+      <div style="padding:48px 24px;text-align:center;border:1px dashed var(--g200);border-radius:6px;margin-top:24px;background:#fff">
+        <div style="font-size:14px;font-weight:600;color:var(--g700);margin-bottom:6px">No offerings yet</div>
+        <div style="font-size:13px;color:var(--g400);margin-bottom:20px;max-width:360px;margin-left:auto;margin-right:auto">
+          Add offerings to define what customers can purchase, then add-ons for optional extras.
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button class="btn-primary" onclick="launchWizardFromGroup('${g.id}', false)">+ Add offering</button>
+          <button class="btn-secondary" onclick="launchWizardFromGroup('${g.id}', true)">+ Add add-on</button>
+        </div>
+      </div>`;
+    return h;
+  }
+
+  // Offerings zone
+  h += `<div class="section-label">Offerings</div>`;
+  if (offerings.length > 0) {
+    h += `<div class="offering-list">`;
+    offerings.forEach((o, i) => { h += offeringCard(o, false, i); });
+    h += `</div>`;
+  } else {
+    h += `<div class="empty-zone">No base offerings yet.</div>`;
+  }
+
+  // Add-ons zone
+  h += `<div class="section-label" style="margin-top:48px">Add-Ons</div>`;
+
+  let hasAnyAddons = false;
+  let addonCards = '';
+
+  if (internalAddons.length > 0) {
+    hasAnyAddons = true;
+    addonCards += `<div class="addon-divider">${g.short}</div>`;
+    internalAddons.forEach((o, i) => { addonCards += offeringCard(o, true, i); });
+  }
+
+  extGroups.forEach(ext => {
+    const sg = groupById(ext.sourceGroup);
+    const extOffs = filterByScope(offeringsForGroup(ext.sourceGroup), scope);
+    if (extOffs.length === 0) return;
+    hasAnyAddons = true;
+    addonCards += `<div class="addon-divider">${sg.short}</div>`;
+    extOffs.forEach((o, i) => { addonCards += offeringCard(o, true, i, ext.dep.replace('requires ','')); });
+  });
+
+  // All-addon groups (no offerings above, everything is an add-on)
+  if (offerings.length === 0 && !hasAnyAddons) {
+    const allFiltered = filterByScope(allOfferings, scope);
+    if (allFiltered.length > 0) {
+      hasAnyAddons = true;
+      allFiltered.forEach((o, i) => { addonCards += offeringCard(o, true, i); });
+    }
+  }
+
+  if (hasAnyAddons) {
+    h += `<div class="offering-list">${addonCards}</div>`;
+  } else {
+    h += `<div class="empty-zone">No add-ons yet.</div>`;
+  }
+
+  return h;
+}
+
+function offeringCard(o, isAddon, idx, depOverride) {
+  const draft = o.status === "draft";
+  const dep = depOverride || o.requires;
+  return `
+    <div class="offering-card ${isAddon ? "addon-card" : ""} ${draft ? "draft" : ""} fade-in" style="animation-delay:${idx*30}ms"
+         onclick="navigate({view:'offering',offeringId:'${o.id}'})">
+      <div class="oc-left">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="oc-name">${o.name}</div>
+          ${draftBadge(o.status)}
+          ${monBadge(o.mon, o.price)}
+        </div>
+        <div class="oc-desc">${o.desc}</div>
+        ${dep ? `<div class="oc-dep">requires ${dep}</div>` : ""}
+      </div>
+      <div class="oc-right">
+        <div class="oc-prices">
+          <div class="oc-price mono">${o.price}</div>
+          ${o.altPrice ? `<div class="oc-alt-price mono">${o.altPrice}</div>` : ''}
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g300)" stroke-width="2" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VIEW 3: OFFERING DETAIL
+// ═══════════════════════════════════════════════════════════════
+
+// Simplified service/feature data for the DSoP offerings (enough for the prototype)
+const SVC_DATA = {
+  "personal": [
+    { svc:"General", slug:"general", feats:[{s:"seats",v:"1",m:"static"}]},
+    { svc:"Docker Hub", slug:"hub", feats:[
+      {s:"private_repositories_limit",v:"1",m:"static"},{s:"image_pull_rate_limit_per_hour",v:"40",m:"static"},
+      {s:"image_pull_count_included_monthly",v:"0",m:"static",dim:true},{s:"concurrent_builds_limit",v:"0",m:"static",dim:true},
+      {s:"trusted_content_catalog_enabled",v:"✗",dim:true},{s:"webhooks_enabled",v:"✗",dim:true},
+    ]},
+    { svc:"Docker Scout", slug:"scout", feats:[
+      {s:"remote_repositories",v:"1",m:"static"},{s:"health_scores_enabled",v:"✓"},
+      {s:"local_vulnerability_analysis",v:"✓"},{s:"image_remediation_enabled",v:"✗",dim:true},
+      {s:"policy_library_type",v:"none",dim:true},{s:"alerting_type",v:"none",dim:true},
+    ]},
+  ],
+  "pro": [
+    { svc:"General", slug:"general", feats:[{s:"seats",v:"1",m:"static"}]},
+    { svc:"Docker Hub", slug:"hub", feats:[
+      {s:"private_repositories_limit",v:"∞",m:"static"},{s:"image_pull_count_included_monthly",v:"25,000",m:"static"},
+      {s:"concurrent_builds_limit",v:"5",m:"static"},{s:"image_pull_rate_limit_per_hour",v:"—",m:"static"},
+      {s:"trusted_content_catalog_enabled",v:"✗",dim:true},{s:"webhooks_enabled",v:"✗",dim:true},
+    ]},
+    { svc:"Docker Build", slug:"build", feats:[
+      {s:"build_minutes_included_monthly",v:"200",m:"static"},{s:"cloud_builders_type",v:"basic"},
+      {s:"storage_gib_limit",v:"50",m:"static"},{s:"concurrent_builds_limit",v:"4",m:"static"},
+    ]},
+    { svc:"Docker Scout", slug:"scout", feats:[
+      {s:"remote_repositories",v:"2",m:"static"},{s:"health_scores_enabled",v:"✓"},
+      {s:"local_vulnerability_analysis",v:"✓"},{s:"image_remediation_enabled",v:"✓"},
+      {s:"policy_library_type",v:"basic"},{s:"alerting_type",v:"basic"},
+    ]},
+    { svc:"Testcontainers Cloud", slug:"testcontainers", feats:[
+      {s:"tc_runtime_minutes_monthly",v:"100",m:"aggregated"},{s:"tc_max_concurrent_workers_desktop",v:"4",m:"static"},
+      {s:"tc_dashboard_enabled",v:"✓"},
+    ]},
+    { svc:"Gordon", slug:"gordon", feats:[
+      {s:"gordon_enabled",v:"✓"},{s:"gordon_monthly_budget",v:"900"},
+      {s:"gordon_excess_credits_enabled",v:"✗",dim:true},
+    ]},
+  ],
+  "team": [
+    { svc:"General", slug:"general", feats:[{s:"seats",v:"5",m:"static"}]},
+    { svc:"Docker Hub", slug:"hub", feats:[
+      {s:"private_repositories_limit",v:"∞",m:"static"},{s:"image_pull_count_included_monthly",v:"100,000",m:"static"},
+      {s:"concurrent_builds_limit",v:"15",m:"static"},
+    ]},
+    { svc:"Docker Build", slug:"build", feats:[
+      {s:"build_minutes_included_monthly",v:"500",m:"static"},{s:"cloud_builders_type",v:"standard"},
+      {s:"storage_gib_limit",v:"100",m:"static"},{s:"concurrent_builds_limit",v:"∞",m:"static"},
+    ]},
+    { svc:"Docker Scout", slug:"scout", feats:[
+      {s:"remote_repositories",v:"∞",m:"static"},{s:"health_scores_enabled",v:"✓"},
+      {s:"policy_library_type",v:"standard"},{s:"alerting_type",v:"standard"},
+    ]},
+    { svc:"Docker Admin", slug:"admin", feats:[
+      {s:"role_based_access_control_enabled",v:"✓"},{s:"audit_logs_enabled",v:"✓"},
+      {s:"organization_access_tokens_limit",v:"10",m:"static"},{s:"single_sign_on_enabled",v:"✗",dim:true},
+    ]},
+    { svc:"Testcontainers Cloud", slug:"testcontainers", feats:[
+      {s:"tc_runtime_minutes_monthly",v:"500",m:"aggregated"},{s:"tc_max_concurrent_workers_desktop",v:"4",m:"static"},
+    ]},
+    { svc:"Gordon", slug:"gordon", feats:[
+      {s:"gordon_enabled",v:"✓"},{s:"gordon_monthly_budget",v:"900"},
+      {s:"gordon_excess_credits_enabled",v:"✗",dim:true},
+    ]},
+  ],
+  "business": [
+    { svc:"General", slug:"general", feats:[{s:"seats",v:"5",m:"static"}]},
+    { svc:"Docker Hub", slug:"hub", feats:[
+      {s:"private_repositories_limit",v:"∞",m:"static"},{s:"image_pull_count_included_monthly",v:"1,000,000",m:"static"},
+      {s:"concurrent_builds_limit",v:"15",m:"static"},{s:"image_access_management_enabled",v:"✓"},
+    ]},
+    { svc:"Docker Build", slug:"build", feats:[
+      {s:"build_minutes_included_monthly",v:"1,500",m:"static"},{s:"cloud_builders_type",v:"standard"},
+      {s:"storage_gib_limit",v:"200",m:"static"},{s:"concurrent_builds_limit",v:"∞",m:"static"},
+    ]},
+    { svc:"Docker Scout", slug:"scout", feats:[
+      {s:"remote_repositories",v:"∞",m:"static"},{s:"health_scores_enabled",v:"✓"},
+      {s:"policy_library_type",v:"standard"},{s:"vulnerability_reporting_enabled",v:"✓"},
+      {s:"cve_suppression_enabled",v:"✓"},{s:"api_integrations_enabled",v:"✓"},
+    ]},
+    { svc:"Docker Admin", slug:"admin", feats:[
+      {s:"role_based_access_control_enabled",v:"✓"},{s:"audit_logs_enabled",v:"✓"},
+      {s:"single_sign_on_enabled",v:"✓"},{s:"scim_enabled",v:"✓"},
+      {s:"settings_management_enabled",v:"✓"},{s:"organization_access_tokens_limit",v:"100",m:"static"},
+      {s:"custom_roles_enabled",v:"✓"},{s:"domain_audit_enabled",v:"✓"},
+    ]},
+    { svc:"Testcontainers Cloud", slug:"testcontainers", feats:[
+      {s:"tc_runtime_minutes_monthly",v:"1,500",m:"aggregated"},{s:"tc_max_concurrent_workers_desktop",v:"4",m:"static"},
+    ]},
+    { svc:"Gordon", slug:"gordon", feats:[
+      {s:"gordon_enabled",v:"✓"},{s:"gordon_monthly_budget",v:"900"},
+      {s:"gordon_excess_credits_enabled",v:"✗",dim:true},
+    ]},
+  ],
+  // DHI Free
+  "dhi-free": [
+    { svc:"Docker Hardened Images", slug:"dhi", feats:[
+      {s:"dhi_enabled",v:"✓"},{s:"dhi_sbom_enabled",v:"✓"},{s:"dhi_slsa_provenance",v:"✓"},
+      {s:"dhi_cve_visibility",v:"✓"},{s:"dhi_cve_remediation_sla",v:"✗",dim:true},
+      {s:"dhi_fips_stig",v:"✗",dim:true},{s:"dhi_compliance_support",v:"✗",dim:true},
+      {s:"dhi_mirroring",v:"✗",dim:true},{s:"dhi_els_enabled",v:"✗",dim:true},
+      {s:"dhi_select_enabled",v:"✗",dim:true},{s:"dhi_customizations_limit",v:"0",dim:true},
+      {s:"dhi_hardened_sys_pkg_repo",v:"✗",dim:true},{s:"dhi_full_catalog_access",v:"✗",dim:true},
+    ]},
+  ],
+  "dhi-sel": [
+    { svc:"Docker Hardened Images", slug:"dhi", feats:[
+      {s:"dhi_enabled",v:"✓"},{s:"dhi_sbom_enabled",v:"✓"},{s:"dhi_slsa_provenance",v:"✓"},
+      {s:"dhi_cve_visibility",v:"✓"},{s:"dhi_cve_remediation_sla",v:"✓"},
+      {s:"dhi_fips_stig",v:"✓"},{s:"dhi_compliance_support",v:"✓"},
+      {s:"dhi_mirroring",v:"✗",dim:true},{s:"dhi_els_enabled",v:"✗",dim:true},
+      {s:"dhi_select_enabled",v:"✓"},{s:"dhi_customizations_limit",v:"5",m:"static"},
+      {s:"dhi_hardened_sys_pkg_repo",v:"✗",dim:true},{s:"dhi_full_catalog_access",v:"✗",dim:true},
+    ]},
+  ],
+  "dhi-ent-r": [
+    { svc:"Docker Hardened Images", slug:"dhi", feats:[
+      {s:"dhi_enabled",v:"✓"},{s:"dhi_sbom_enabled",v:"✓"},{s:"dhi_slsa_provenance",v:"✓"},
+      {s:"dhi_cve_visibility",v:"✓"},{s:"dhi_cve_remediation_sla",v:"✓"},
+      {s:"dhi_fips_stig",v:"✓"},{s:"dhi_compliance_support",v:"✓"},
+      {s:"dhi_mirroring",v:"✓"},{s:"dhi_els_enabled",v:"✗",dim:true},
+      {s:"dhi_select_enabled",v:"✓"},{s:"dhi_customizations_limit",v:"∞",m:"static"},
+      {s:"dhi_hardened_sys_pkg_repo",v:"✓"},{s:"dhi_full_catalog_access",v:"✗",dim:true},
+    ]},
+  ],
+  "dhi-ent-f": [
+    { svc:"Docker Hardened Images", slug:"dhi", feats:[
+      {s:"dhi_enabled",v:"✓"},{s:"dhi_sbom_enabled",v:"✓"},{s:"dhi_slsa_provenance",v:"✓"},
+      {s:"dhi_cve_visibility",v:"✓"},{s:"dhi_cve_remediation_sla",v:"✓"},
+      {s:"dhi_fips_stig",v:"✓"},{s:"dhi_compliance_support",v:"✓"},
+      {s:"dhi_mirroring",v:"✓"},{s:"dhi_els_enabled",v:"✗",dim:true},
+      {s:"dhi_select_enabled",v:"✓"},{s:"dhi_customizations_limit",v:"∞",m:"static"},
+      {s:"dhi_hardened_sys_pkg_repo",v:"✓"},{s:"dhi_full_catalog_access",v:"✓"},
+    ]},
+  ],
+  "dhi-els-r": [
+    { svc:"Docker Hardened Images", slug:"dhi", feats:[
+      {s:"dhi_els_enabled",v:"✓"},
+    ]},
+  ],
+  "dhi-els-f": [
+    { svc:"Docker Hardened Images", slug:"dhi", feats:[
+      {s:"dhi_els_enabled",v:"✓"},
+    ]},
+  ],
+  "prem": [
+    { svc:"Docker Support", slug:"support", feats:[
+      {s:"premium_support_enabled",v:"✓"},{s:"sev1_response_hours",v:"1",m:"static"},
+      {s:"sev2_response_hours",v:"4",m:"static"},{s:"sev3_response_hours",v:"8",m:"static"},
+      {s:"priority_ticket_routing",v:"✓"},{s:"escalation_management",v:"✓"},
+      {s:"live_troubleshooting",v:"✓"},{s:"root_cause_analysis",v:"✓"},
+      {s:"support_availability",v:"24×7"},
+    ]},
+  ],
+  "tam": [
+    { svc:"Docker Support", slug:"support", feats:[
+      {s:"tam_enabled",v:"✓"},{s:"tam_quickstarts",v:"✓"},
+      {s:"tam_health_adoption",v:"✓"},{s:"tam_roadmap_advisory",v:"✓"},
+      {s:"tam_architecture_review",v:"✓"},{s:"tam_ebrs_qbrs",v:"✓"},
+    ]},
+  ],
+  "g-pro": [
+    { svc:"Gordon", slug:"gordon", feats:[
+      {s:"gordon_enabled",v:"✓"},{s:"gordon_monthly_budget",v:"1,800"},
+      {s:"gordon_excess_enabled",v:"✓"},
+    ]},
+  ],
+  "g-max": [
+    { svc:"Gordon", slug:"gordon", feats:[
+      {s:"gordon_enabled",v:"✓"},{s:"gordon_monthly_budget",v:"4,500"},
+      {s:"gordon_excess_enabled",v:"✓"},
+    ]},
+  ],
+  "g-ult": [
+    { svc:"Gordon", slug:"gordon", feats:[
+      {s:"gordon_enabled",v:"✓"},{s:"gordon_monthly_budget",v:"18,000"},
+      {s:"gordon_excess_enabled",v:"✓"},
+    ]},
+  ],
+  "g-ent": [
+    { svc:"Gordon", slug:"gordon", feats:[
+      {s:"gordon_enabled",v:"✓"},{s:"gordon_spending_cap",v:"∞"},
+      {s:"gordon_excess_enabled",v:"✗",dim:true},
+    ]},
+  ],
+  "bc-min": [
+    { svc:"Docker Build", slug:"build", feats:[
+      {s:"build_minutes_additional_annual",v:"per block",m:"static"},
+    ]},
+  ],
+  "tc-pre": [
+    { svc:"Testcontainers Cloud", slug:"testcontainers", feats:[
+      {s:"tc_additional_minutes",v:"per block",m:"aggregated"},
+    ]},
+  ],
+  "tc-od": [
+    { svc:"Testcontainers Cloud", slug:"testcontainers", feats:[
+      {s:"tc_additional_minutes",v:"∞ (PAYG)",m:"aggregated"},
+    ]},
+  ],
+  "sbx": [
+    { svc:"Docker Sandboxes", slug:"sandboxes", feats:[
+      {s:"sandboxes_enabled",v:"✓",m:"static"},
+      {s:"sandbox_cpu_usage",v:"∞ (PAYG)",m:"aggregated"},
+      {s:"sandbox_memory_usage",v:"∞ (PAYG)",m:"aggregated"},
+      {s:"sandbox_storage_usage",v:"∞ (PAYG)",m:"aggregated"},
+    ]},
+  ],
+};
+
+const RATE_CARDS = {
+  "personal": [{label:"Seat · fixed · advance · monthly", price:"$0.00", external:"Stripe · price_1PxgztCi2Sw6UZ9J"}],
+  "pro": [{label:"Seat · fixed · advance · monthly", price:"$11.00 / month", external:"Stripe · price_1Pxh7CCi2Sw6UZ9J"},{label:"Seat · fixed · advance · annual", price:"$108.00 / year", external:"Stripe · price_1Pxh7CCi2Sw6UZ9Jv"}],
+  "team": [{label:"Seat · per_unit · advance · monthly", price:"$16.00 / seat", external:"Stripe · price_1PxhIvCi2Sw6UZ9J"},{label:"Seat · per_unit · advance · annual", price:"$180.00 / seat", external:"Stripe · price_1PxhIvCi2Sw6UZ9Jc"}],
+  "business": [{label:"Seat · per_unit · advance · annual", price:"$288.00 / seat", external:"Stripe · price_1PxhLECi2Sw6UZ9J"}],
+  "bc-min": [{label:"Build minutes · block · immediate · one-time", price:"$25.00/500-min ($0.05/min effective)"}],
+  "tc-pre": [{label:"TC minutes · block · immediate · one-time", price:"$3.00/100-min ($0.03/min effective)"}],
+  "tc-od": [{label:"TC minutes · per_unit · arrears · monthly", price:"$0.04 / minute"}],
+  "dhi-free": [{label:"DHI access · fixed · advance · monthly", price:"$0.00"}],
+  "dhi-sel": [{label:"DHI repo · per_unit · advance · annual", price:"$5,000.00 / repo / year"}],
+  "dhi-ent-r": [{label:"DHI repo · per_unit · advance · annual", price:"$8,000.00 / repo / year"}],
+  "dhi-ent-f": [{label:"DHI catalog · fixed · advance · annual", price:"$200,000.00 / year"}],
+  "dhi-els-r": [{label:"ELS repo · per_unit · advance · annual", price:"$8,000.00 / repo / year"}],
+  "dhi-els-f": [{label:"ELS catalog · fixed · advance · annual", price:"$200,000.00 / year"}],
+  "prem": [{label:"Support · fixed · advance · annual", price:"$40,000.00 / year"}],
+  "tam": [{label:"TAM · fixed · advance · annual", price:"$60,000.00 / year"}],
+  "g-pro": [{label:"Gordon · fixed · advance · monthly", price:"$20.00 / month"},{label:"Gordon overage · per_unit · arrears · monthly", price:"$0.000001 / credit"}],
+  "g-max": [{label:"Gordon · fixed · advance · monthly", price:"$50.00 / month"},{label:"Gordon overage · per_unit · arrears · monthly", price:"$0.000001 / credit"}],
+  "g-ult": [{label:"Gordon · fixed · advance · monthly", price:"$200.00 / month"},{label:"Gordon overage · per_unit · arrears · monthly", price:"$0.000001 / credit"}],
+  "g-ent": [{label:"Gordon · per_unit · arrears · monthly", price:"$0.01 / request (placeholder)"}],
+  "sbx": [
+    {label:"CPU · per_unit · arrears · monthly", price:"from $0.035 / vCPU-hour"},
+    {label:"Memory · per_unit · arrears · monthly", price:"from $0.005 / GB-hour"},
+    {label:"Storage · per_unit · arrears · monthly", price:"from $0.06 / GB-month"},
+  ],
+};
+
+const LIFECYCLE = {
+  "personal": [{dir:"↑",text:"upgrade to: Docker Pro (immediate)"}],
+  "pro": [{dir:"↑",text:"upgrade from: Docker Personal (immediate)"},{dir:"↓",text:"downgrade to: Docker Personal (end of period)"}],
+  "team": [{dir:"↑",text:"upgrade to: Docker Business (immediate)"}],
+  "business": [{dir:"↓",text:"downgrade to: Docker Team (end of period)"}],
+  "dhi-free": [{dir:"↑",text:"upgrade to: DHI Select (immediate)"},{dir:"↑",text:"upgrade to: DHI Enterprise (immediate)"}],
+  "dhi-sel": [{dir:"↑",text:"upgrade from: DHI Free (immediate)"},{dir:"↑",text:"upgrade to: DHI Enterprise (immediate)"},{dir:"↓",text:"downgrade to: DHI Free (end of period)"}],
+  "dhi-ent-r": [{dir:"↑",text:"upgrade from: DHI Select (immediate)"},{dir:"↓",text:"downgrade to: DHI Select (end of period)"}],
+  "dhi-ent-f": [{dir:"↑",text:"upgrade from: DHI Select (immediate)"},{dir:"↓",text:"downgrade to: DHI Select (end of period)"}],
+  "g-pro": [{dir:"↑",text:"upgrade to: Gordon Max (immediate)"},{dir:"↑",text:"upgrade to: Gordon Ultra (immediate)"}],
+  "g-max": [{dir:"↑",text:"upgrade from: Gordon Pro (immediate)"},{dir:"↑",text:"upgrade to: Gordon Ultra (immediate)"},{dir:"↓",text:"downgrade to: Gordon Pro (end of period)"}],
+  "g-ult": [{dir:"↑",text:"upgrade from: Gordon Max (immediate)"},{dir:"↓",text:"downgrade to: Gordon Max (end of period)"},{dir:"↓",text:"downgrade to: Gordon Pro (end of period)"}],
+};
+
+const CONSTRAINTS = {
+  "personal": ["seats: self-serve 1–1"],
+  "pro": ["seats: self-serve 1–1"],
+  "team": ["seats: self-serve 1–100 · sales-led 25+"],
+  "business": ["seats: self-serve 1–100 · sales-led 25+"],
+};
+
+function renderOfferingDetail() {
+  const o = OFFERINGS.find(x => x.id === state.offeringId);
+  if (!o) return "<p>Offering not found</p>";
+  const g = groupById(o.group);
+
+  let h = `
+    <button class="back" onclick="navigate({view:'group',groupId:'${o.group}',offeringId:null})">
+      ← ${g.short} / <span>${o.name}</span>
+    </button>
+    <div class="detail-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <h1 class="page-title">${o.name} ${draftBadge(o.status)}</h1>
+          <div style="font-size:13px;color:var(--g500);margin-top:6px">${o.desc}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:24px">
+          <div style="font-size:20px;font-weight:600;color:var(--g900);letter-spacing:-0.02em" class="mono">${o.price}</div>
+          ${o.altPrice ? `<div style="font-size:13px;color:var(--g400);margin-top:4px">${o.altPrice}</div>` : ""}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--g100)">
+        <div class="meta-row" style="margin-top:0">${pkgBadge(o.pkg)} ${monBadge(o.mon, o.price)} ${acctBadge(o.acct)}</div>
+        <span style="color:var(--g200)">·</span>
+        <span class="mono" style="font-size:12px;color:var(--g400)">${o.slug}</span>
+        ${o.requires ? `<span style="color:var(--g200)">·</span><span style="font-size:12px;color:var(--g400)">requires <strong style="color:var(--g600);font-weight:500">${o.requires}</strong></span>` : ''}
+      </div>
+    </div>`;
+
+  // Entitlements
+  const svcs = SVC_DATA[o.id];
+  if (svcs) {
+    h += `<div class="section-divider"></div><div class="section-label">Entitlements</div>`;
+    svcs.forEach((s, si) => {
+      h += `<div class="svc-card fade-in" style="animation-delay:${si*40}ms">
+        <div class="svc-header">
+          <div>
+            <div class="svc-name">${s.svc}</div>
+          </div>
+          <span style="font-size:12px;color:var(--g400)">${s.feats.length} feature${s.feats.length!==1?'s':''}</span>
+        </div>
+        <table class="feat-table">
+          <tbody>`;
+      s.feats.forEach(f => {
+        const meta = featureMeta(s.slug, f.s);
+        const name = featureName(s.slug, f.s);
+        let tags = '';
+        if (meta && meta.mutable) tags += `<span class="feat-tag feat-tag-mutable">mutable</span>`;
+        if (meta && meta.metering && meta.metering !== 'static') tags += `<span class="feat-tag feat-tag-metered">${meta.metering}</span>`;
+        h += `<tr class="${f.dim?'dimmed':''} clickable-row" onclick="openFeatureDrawer('${s.slug}','${f.s}')">
+          <td>${name}${tags}</td>
+          <td class="feat-val">${f.v}</td>
+        </tr>`;
+      });
+      h += `</tbody></table></div>`;
+    });
+  }
+
+  // Rate Cards
+  const rcs = RATE_CARDS[o.id];
+  if (rcs) {
+    h += `<div class="section-divider"></div><div class="section-label">Rate Cards</div>`;
+    h += `<div class="svc-card"><table class="feat-table">
+      <thead><tr>
+        <th>Description</th>
+        <th style="width:90px">Model</th>
+        <th style="width:80px">Timing</th>
+        <th style="width:80px">Cycle</th>
+        <th style="width:160px;text-align:right">Price</th>
+      </tr></thead><tbody>`;
+    rcs.forEach((rc, i) => {
+      const p = rc.label.split(' · ');
+      h += `<tr class="clickable-row" onclick="openRateCardDrawer(RATE_CARDS['${o.id}'][${i}], '${o.name.replace(/'/g,"\\'")}')">
+        <td><span style="font-weight:500;color:var(--g900)">${p[0]||'—'}</span>${rc.external ? `<div style="font-size:11px;color:var(--g400);margin-top:1px">${rc.external}</div>` : ''}</td>
+        <td>${p[1]||'—'}</td>
+        <td>${p[2]||'—'}</td>
+        <td>${p[3]||'—'}</td>
+        <td class="feat-val mono">${rc.price}</td>
+      </tr>`;
+    });
+    h += `</tbody></table></div>`;
+  }
+
+  // Lifecycle
+  const lc = LIFECYCLE[o.id];
+  if (lc) {
+    h += `<div class="section-divider"></div><div class="section-label">Lifecycle</div>`;
+    h += `<div class="svc-card"><table class="feat-table">
+      <thead><tr>
+        <th style="width:80px">Type</th>
+        <th>Target</th>
+        <th style="width:120px;text-align:right">Timing</th>
+      </tr></thead><tbody>`;
+    lc.forEach(l => {
+      const isUp = l.dir === '↑';
+      const badge = isUp
+        ? `<span class="badge" style="background:#ECFDF5;color:#059669;font-size:10px;padding:1px 6px">upgrade</span>`
+        : `<span class="badge" style="background:#FEF3C7;color:#D97706;font-size:10px;padding:1px 6px">downgrade</span>`;
+      const target = l.text.replace(/^(upgrade to|upgrade from|downgrade to|downgrade from): /, '').replace(/ \(immediate\)| \(end of period\)/g, '').trim();
+      const timing = l.text.includes('immediate') ? 'Immediate' : 'End of period';
+      h += `<tr>
+        <td>${badge}</td>
+        <td style="font-weight:500;color:var(--g900)">${target}</td>
+        <td style="text-align:right;color:var(--g500)">${timing}</td>
+      </tr>`;
+    });
+    h += `</tbody></table></div>`;
+  }
+
+  // Constraints
+  const cs = CONSTRAINTS[o.id];
+  if (cs) {
+    h += `<div class="section-divider"></div><div class="section-label">Constraints</div>`;
+    h += `<div class="rc-card">`;
+    cs.forEach(c => { h += `<div class="const-row mono">${c}</div>`; });
+    h += `</div>`;
+  }
+
+  // Available add-ons (for base offerings)
+  if (o.pkg !== 'add_on') {
+    // Find all add-ons that list this offering in their deps
+    const availableAddons = OFFERINGS.filter(a => {
+      const deps = OFFERING_DEPS[a.id];
+      return deps && deps.includes(o.id);
+    });
+    if (availableAddons.length > 0) {
+      h += `<div class="section-divider"></div><div class="section-label">Available Add-Ons</div>`;
+      h += `<div class="offering-list">`;
+      availableAddons.forEach((a, i) => {
+        h += `
+          <div class="offering-card fade-in" style="animation-delay:${i*30}ms" onclick="navigate({view:'offering',offeringId:'${a.id}'})">
+            <div class="oc-left">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="oc-name">${a.name}</div>
+                ${monBadge(a.mon, a.price)}
+              </div>
+              <div class="oc-desc">${a.desc}</div>
+            </div>
+            <div class="oc-right">
+              <div class="oc-prices"><div class="oc-price mono">${a.price}</div></div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g300)" stroke-width="2" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>`;
+      });
+      h += `</div>`;
+    }
+  }
+
+  // Required offerings (for add-ons)
+  if (o.pkg === 'add_on') {
+    const depIds = OFFERING_DEPS[o.id] || [];
+    const reqOfferings = depIds.map(id => OFFERINGS.find(x => x.id === id)).filter(Boolean);
+    if (reqOfferings.length > 0) {
+      const isMultiple = reqOfferings.length > 1;
+      h += `<div class="section-divider"></div><div class="section-label">Required Offerings</div>`;
+      if (isMultiple) {
+        h += `<p style="font-size:13px;color:var(--g500);margin-bottom:12px">Customer must have an active subscription to <strong style="color:var(--g700)">at least one</strong> of these offerings to purchase this add-on.</p>`;
+      }
+      h += `<div class="offering-list">`;
+      reqOfferings.forEach((r, i) => {
+        if (isMultiple && i > 0) {
+          h += `<div style="padding:3px 20px;font-size:11px;font-weight:600;color:var(--g400);text-transform:uppercase;letter-spacing:0.04em;background:var(--g50);border-bottom:1px solid var(--g200);text-align:center">or</div>`;
+        }
+        h += `<div class="offering-card fade-in" style="animation-delay:${i*30}ms" onclick="navigate({view:'offering',offeringId:'${r.id}'})">
+            <div class="oc-left">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="oc-name">${r.name}</div>
+                ${monBadge(r.mon, r.price)}
+              </div>
+              <div class="oc-desc">${r.desc}</div>
+            </div>
+            <div class="oc-right">
+              <div class="oc-prices"><div class="oc-price mono">${r.price}</div></div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g300)" stroke-width="2" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>`;
+      });
+      h += `</div>`;
+    }
+  }
+
+  return h;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURES PAGE DATA
+// ═══════════════════════════════════════════════════════════════
+
+const SERVICES = [
+  { id:"general", name:"General", slug:"general", desc:"Core platform features including seats and billing", featureCount: 1 },
+  { id:"hub", name:"Docker Hub", slug:"hub", desc:"Container registry and image management", featureCount: 15 },
+  { id:"admin", name:"Docker Admin", slug:"admin", desc:"Organization administration and security features", featureCount: 15 },
+  { id:"build", name:"Docker Build", slug:"build", desc:"Build minutes and build capabilities", featureCount: 5 },
+  { id:"scout", name:"Docker Scout", slug:"scout", desc:"Security scanning and vulnerability detection", featureCount: 11 },
+  { id:"testcontainers", name:"Testcontainers Cloud", slug:"testcontainers", desc:"Cloud-hosted test containers for CI and desktop testing", featureCount: 6 },
+  { id:"dhi", name:"Docker Hardened Images", slug:"hardened_images", desc:"Secure, minimal container images with SBOMs, provenance, and CVE remediation", featureCount: 13 },
+  { id:"support", name:"Docker Support", slug:"support", desc:"Standard and premium support services", featureCount: 15 },
+  { id:"gordon", name:"Gordon", slug:"gordon", desc:"Docker AI assistant — debugging, setup, deployment, infrastructure management", featureCount: 4 },
+  { id:"sandboxes", name:"Docker Sandboxes", slug:"sandboxes", desc:"On-demand ephemeral compute environments with configurable CPU, memory, and storage", featureCount: 4 },
+];
+
+const SERVICE_FEATURES = {
+  "general": [
+    { slug:"seats", name:"Seats", type:"integer", mutable:true, metering:"static", desc:"Number of user seats in the organization" },
+  ],
+  "hub": [
+    { slug:"trusted_content_catalog_enabled", name:"Trusted Content Catalog Enabled", type:"boolean", mutable:false, desc:"Access to trusted content catalog" },
+    { slug:"webhooks_enabled", name:"Webhooks Enabled", type:"boolean", mutable:false, desc:"Support for webhooks" },
+    { slug:"automated_tests_enabled", name:"Automated Tests Enabled", type:"boolean", mutable:false, desc:"Support for automated tests" },
+    { slug:"github_integration_enabled", name:"GitHub Integration Enabled", type:"boolean", mutable:false, desc:"GitHub integration support" },
+    { slug:"bitbucket_integration_enabled", name:"Bitbucket Integration Enabled", type:"boolean", mutable:false, desc:"Bitbucket integration support" },
+    { slug:"automated_builds_enabled", name:"Automated Builds Enabled", type:"boolean", mutable:false, desc:"Support for automated builds" },
+    { slug:"concurrent_builds_limit", name:"Concurrent Builds Limit", type:"integer", mutable:false, metering:"static", desc:"Number of concurrent builds allowed" },
+    { slug:"public_repositories_limit", name:"Public Repositories Limit", type:"integer", mutable:false, metering:"static", desc:"Number of public repositories allowed" },
+    { slug:"public_repositories_storage_gib_limit", name:"Public Repo Storage GiB Limit", type:"integer", mutable:false, metering:"static", desc:"Storage limit for public repositories in GiB" },
+    { slug:"image_access_management_enabled", name:"Image Access Management Enabled", type:"boolean", mutable:false, desc:"Control which images developers can access" },
+    { slug:"image_pull_rate_limit_per_hour", name:"Image Pull Rate Limit/Hour", type:"integer", mutable:false, metering:"static", desc:"Hourly image pull rate limit" },
+    { slug:"image_pull_count_included_monthly", name:"Image Pull Count Included Monthly", type:"integer", mutable:false, metering:"static", desc:"Monthly included image pulls" },
+    { slug:"image_pull_count_additional_annual", name:"Image Pull Count Additional Annual", type:"integer", mutable:true, metering:"static", desc:"Additional annual image pulls (retain-eligible)" },
+    { slug:"private_repositories_limit", name:"Private Repositories Limit", type:"integer", mutable:false, metering:"static", desc:"Number of private repositories allowed" },
+    { slug:"private_repositories_storage_gib_included_limit", name:"Private Repo Storage GiB Included", type:"integer", mutable:false, metering:"static", desc:"Included storage for private repositories in GiB" },
+  ],
+  "admin": [
+    { slug:"personal_access_tokens_enabled", name:"Personal Access Tokens Enabled", type:"boolean", mutable:false, desc:"Support for personal access tokens" },
+    { slug:"organization_access_tokens_limit", name:"Org Access Tokens Limit", type:"integer", mutable:false, metering:"static", desc:"Maximum number of organization access tokens" },
+    { slug:"add_users_in_bulk_enabled", name:"Add Users in Bulk Enabled", type:"boolean", mutable:false, desc:"Ability to add users in bulk" },
+    { slug:"role_based_access_control_enabled", name:"RBAC Enabled", type:"boolean", mutable:false, desc:"Team permission management (RBAC)" },
+    { slug:"audit_logs_enabled", name:"Audit Logs Enabled", type:"boolean", mutable:false, desc:"Activity audit logging" },
+    { slug:"desktop_usage_insight_dashboard_enabled", name:"Desktop Usage Insights", type:"boolean", mutable:false, desc:"Access to desktop usage insights" },
+    { slug:"domain_audit_enabled", name:"Domain Audit Enabled", type:"boolean", mutable:false, desc:"Domain audit capabilities" },
+    { slug:"account_hierarchy_enabled", name:"Account Hierarchy Enabled", type:"boolean", mutable:false, desc:"Support for account hierarchies" },
+    { slug:"account_hierarchy_member_limit", name:"Account Hierarchy Member Limit", type:"integer", mutable:false, metering:"static", desc:"Maximum members in account hierarchy" },
+    { slug:"single_sign_on_enabled", name:"SSO Enabled", type:"boolean", mutable:false, desc:"SSO authentication" },
+    { slug:"scim_enabled", name:"SCIM Enabled", type:"boolean", mutable:false, desc:"System for Cross-Domain Identity Management" },
+    { slug:"settings_management_enabled", name:"Settings Management Enabled", type:"boolean", mutable:false, desc:"Centralized settings management" },
+    { slug:"account_association_enabled", name:"Account Association Enabled", type:"boolean", mutable:false, desc:"Account association capabilities" },
+    { slug:"oidc_connections_limit", name:"OIDC Connections Limit", type:"integer", mutable:false, metering:"static", desc:"Maximum number of OIDC connections" },
+    { slug:"custom_roles_enabled", name:"Custom Roles Enabled", type:"boolean", mutable:false, desc:"Support for custom roles" },
+  ],
+  "build": [
+    { slug:"concurrent_builds_limit", name:"Concurrent Builds Limit", type:"integer", mutable:false, metering:"static", desc:"Number of concurrent builds allowed" },
+    { slug:"cloud_builders_type", name:"Cloud Builders Type", type:"string", mutable:false, desc:"Type of cloud builders (none, basic, standard)" },
+    { slug:"storage_gib_limit", name:"Storage GiB Limit", type:"integer", mutable:false, metering:"static", desc:"Build storage limit in GiB" },
+    { slug:"build_minutes_included_monthly", name:"Build Minutes Included Monthly", type:"integer", mutable:false, metering:"static", desc:"Monthly included build minutes" },
+    { slug:"build_minutes_additional_annual", name:"Build Minutes Additional Annual", type:"integer", mutable:true, metering:"static", desc:"Additional annual build minutes (retain-eligible)" },
+  ],
+  "scout": [
+    { slug:"health_scores_enabled", name:"Health Scores Enabled", type:"boolean", mutable:false, desc:"Access to health scores" },
+    { slug:"local_vulnerability_analysis_enabled", name:"Local Vulnerability Analysis", type:"boolean", mutable:false, desc:"Local vulnerability scanning" },
+    { slug:"image_remediation_enabled", name:"Image Remediation Enabled", type:"boolean", mutable:false, desc:"Image remediation guidance" },
+    { slug:"docker_integrations_enabled", name:"Docker Integrations Enabled", type:"boolean", mutable:false, desc:"Docker-specific integrations" },
+    { slug:"sdlc_integrations", name:"SDLC Integrations", type:"integer", mutable:false, metering:"static", desc:"Number of SDLC integrations allowed" },
+    { slug:"policy_library_and_evaluation_type", name:"Policy Library Type", type:"string", mutable:false, desc:"Policy library type (none, basic, standard)" },
+    { slug:"alerting_and_notifications_type", name:"Alerting Type", type:"string", mutable:false, desc:"Alerting type (none, basic, standard)" },
+    { slug:"vulnerability_reporting_enabled", name:"Vulnerability Reporting", type:"boolean", mutable:false, desc:"Vulnerability reporting capabilities" },
+    { slug:"cve_suppression_and_exception_enabled", name:"CVE Suppression Enabled", type:"boolean", mutable:false, desc:"CVE suppression capabilities" },
+    { slug:"api_integrations_enabled", name:"API Integrations Enabled", type:"boolean", mutable:false, desc:"Scout API integration support" },
+    { slug:"remote_repositories", name:"Remote Repositories", type:"integer", mutable:false, metering:"static", desc:"Number of Scout-enabled remote repositories" },
+  ],
+  "testcontainers": [
+    { slug:"testcontainers_enabled", name:"Testcontainers Cloud Enabled", type:"boolean", mutable:false, metering:"static", desc:"Access gate for Testcontainers Cloud" },
+    { slug:"tc_runtime_minutes_monthly", name:"TC Runtime Minutes Monthly", type:"integer", mutable:false, metering:"aggregated", desc:"Monthly included cloud runtime minutes" },
+    { slug:"tc_max_concurrent_workers_desktop", name:"Max Concurrent Workers Desktop", type:"integer", mutable:false, metering:"static", desc:"Maximum concurrent workers per user on Desktop" },
+    { slug:"tc_max_concurrent_workers_ci", name:"Max Concurrent Workers CI", type:"integer", mutable:false, metering:"static", desc:"Maximum concurrent workers per CI account" },
+    { slug:"tc_dashboard_enabled", name:"TC Dashboard Enabled", type:"boolean", mutable:false, metering:"static", desc:"Access to Testcontainers Cloud Dashboard" },
+    { slug:"tc_additional_minutes", name:"TC Additional Minutes", type:"integer", mutable:true, metering:"aggregated", desc:"Additional runtime minutes (prepaid top-up or on-demand)" },
+  ],
+  "dhi": [
+    { slug:"dhi_enabled", name:"DHI Enabled", type:"boolean", mutable:false, metering:"static", desc:"Access to Docker Hardened Images" },
+    { slug:"dhi_sbom_enabled", name:"SBOMs Enabled", type:"boolean", mutable:false, desc:"Verifiable SBOMs on all hardened images" },
+    { slug:"dhi_slsa_provenance", name:"SLSA Provenance", type:"boolean", mutable:false, desc:"SLSA Level 3 build provenance" },
+    { slug:"dhi_cve_visibility", name:"Full CVE Visibility", type:"boolean", mutable:false, desc:"Unsuppressed CVE visibility across all images" },
+    { slug:"dhi_cve_remediation_sla", name:"CVE Remediation SLAs", type:"boolean", mutable:false, desc:"SLA-backed CVE remediation timelines" },
+    { slug:"dhi_fips_stig", name:"FIPS/STIG Variants", type:"boolean", mutable:false, desc:"FIPS 140-2/3 and STIG-hardened image variants" },
+    { slug:"dhi_compliance_support", name:"Compliance Support", type:"boolean", mutable:false, desc:"PCI DSS, CMMC, CIS compliance support" },
+    { slug:"dhi_mirroring", name:"Mirroring & Customization", type:"boolean", mutable:false, desc:"Private mirroring and image customization" },
+    { slug:"dhi_els_enabled", name:"Extended Lifecycle Support", type:"boolean", mutable:false, desc:"Hardened updates for end-of-life software" },
+    { slug:"dhi_select_enabled", name:"DHI Select Enabled", type:"boolean", mutable:false, desc:"DHI Select tier gate" },
+    { slug:"dhi_customizations_limit", name:"Customizations per Repo", type:"integer", mutable:false, metering:"static", desc:"Max customizations per repo. -1=unlimited" },
+    { slug:"dhi_hardened_sys_pkg_repo", name:"Hardened System Packages Repo", type:"boolean", mutable:false, desc:"Access to Hardened System Packages repository" },
+    { slug:"dhi_full_catalog_access", name:"Full Catalog Access", type:"boolean", mutable:false, desc:"Full DHI catalog access (vs per-repo)" },
+  ],
+  "support": [
+    { slug:"premium_support_enabled", name:"Premium Support Enabled", type:"boolean", mutable:false, desc:"24×7 premium support with priority SLAs" },
+    { slug:"sev1_response_hours", name:"Sev 1 Response Time (hrs)", type:"integer", mutable:false, metering:"static", desc:"Maximum initial response time for Severity 1 tickets" },
+    { slug:"sev2_response_hours", name:"Sev 2 Response Time (hrs)", type:"integer", mutable:false, metering:"static", desc:"Maximum initial response time for Severity 2 tickets" },
+    { slug:"sev3_response_hours", name:"Sev 3 Response Time (hrs)", type:"integer", mutable:false, metering:"static", desc:"Maximum initial response time for Severity 3 tickets" },
+    { slug:"priority_ticket_routing", name:"Priority Ticket Routing", type:"boolean", mutable:false, desc:"Priority routing for support tickets" },
+    { slug:"escalation_management", name:"Escalation Management", type:"boolean", mutable:false, desc:"Dedicated escalation management" },
+    { slug:"live_troubleshooting", name:"Live Troubleshooting Calls", type:"boolean", mutable:false, desc:"Support via audio/video conferencing" },
+    { slug:"root_cause_analysis", name:"Root Cause Analysis", type:"boolean", mutable:false, desc:"RCA reporting for major incidents" },
+    { slug:"support_availability", name:"Support Availability", type:"string", mutable:false, desc:"Support hours availability (e.g., 24x5, 24x7)" },
+    { slug:"tam_enabled", name:"TAM Enabled", type:"boolean", mutable:false, desc:"Technical Account Manager assigned" },
+    { slug:"tam_quickstarts", name:"TAM Quickstarts", type:"boolean", mutable:false, desc:"Guided onboarding for new teams" },
+    { slug:"tam_health_adoption", name:"TAM Health & Adoption", type:"boolean", mutable:false, desc:"Ongoing advisory reviews aligned to business goals" },
+    { slug:"tam_roadmap_advisory", name:"TAM Roadmap Advisory", type:"boolean", mutable:false, desc:"Roadmap briefings tailored to customer use cases" },
+    { slug:"tam_architecture_review", name:"TAM Architecture Review", type:"boolean", mutable:false, desc:"Periodic reviews against Docker reference patterns" },
+    { slug:"tam_ebrs_qbrs", name:"TAM EBRs/QBRs", type:"boolean", mutable:false, desc:"Executive and quarterly business reviews" },
+  ],
+  "gordon": [
+    { slug:"gordon_enabled", name:"Gordon Enabled", type:"boolean", mutable:false, desc:"Access to Gordon AI assistant" },
+    { slug:"gordon_monthly_budget", name:"Gordon Monthly Budget", type:"integer", mutable:false, desc:"Monthly credit budget (in credits)" },
+    { slug:"gordon_spending_cap", name:"Gordon Spending Cap", type:"integer", mutable:true, desc:"Configurable spending cap" },
+    { slug:"gordon_excess_enabled", name:"Gordon Excess Credits Enabled", type:"boolean", mutable:false, desc:"Whether excess credit usage is allowed" },
+  ],
+  "sandboxes": [
+    { slug:"sandboxes_enabled", name:"Sandboxes Enabled", type:"boolean", mutable:false, metering:"static", desc:"Access gate for Docker Sandboxes" },
+    { slug:"sandbox_cpu_usage", name:"Sandbox CPU Usage", type:"integer", mutable:false, metering:"aggregated", desc:"Metered vCPU-hours consumed by sandbox instances" },
+    { slug:"sandbox_memory_usage", name:"Sandbox Memory Usage", type:"integer", mutable:false, metering:"aggregated", desc:"Metered GB-hours of memory consumed by sandboxes" },
+    { slug:"sandbox_storage_usage", name:"Sandbox Storage Usage", type:"integer", mutable:false, metering:"aggregated", desc:"Metered GB-months of persistent storage for sandboxes" },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════
+// FEATURES VIEWS
+// ═══════════════════════════════════════════════════════════════
+
+function renderFeaturesIndex() {
+  let h = `
+    <div class="header-row">
+      <div>
+        <h1 class="page-title">Features</h1>
+        <p class="page-sub">${SERVICES.length} services</p>
+      </div>
+    </div>
+    <div class="list-container" style="margin-top:16px">`;
+
+  SERVICES.forEach((s, i) => {
+    h += `
+      <div class="group-row fade-in" style="animation-delay:${i*40}ms" onclick="navigate({view:'service',serviceId:'${s.id}'})">
+        <div class="group-row-left">
+          <div class="group-row-name">${s.name}</div>
+          <div class="group-row-desc">${s.desc}</div>
+        </div>
+        <div class="group-row-right">
+          ${s.featureCount} feature${s.featureCount!==1?"s":""}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg>
+        </div>
+      </div>`;
+  });
+  h += `</div>`;
+  return h;
+}
+
+function renderServiceDetail() {
+  const svc = SERVICES.find(s => s.id === state.serviceId);
+  if (!svc) return "<p>Service not found</p>";
+  const feats = SERVICE_FEATURES[svc.id] || [];
+
+  let h = `
+    <button class="back" onclick="navigate({view:'features',serviceId:null})">
+      ← Features / <span>${svc.name}</span>
+    </button>
+    <h1 class="page-title">${svc.name}</h1>
+    <div class="oc-slug mono" style="margin-top:6px">svc: ${svc.slug}</div>
+    <p class="page-sub" style="margin-top:6px">${svc.desc}</p>
+    <div class="section-label" style="margin-top:24px">${feats.length} Features</div>
+    <div class="list-container">`;
+
+  feats.forEach((f, i) => {
+    const typeBadge = f.type === "boolean" ? "badge-sub" : f.type === "integer" ? "badge-payg" : "badge-standalone";
+    h += `
+      <div class="group-row fade-in" style="animation-delay:${i*25}ms" onclick="openFeatureDrawer('${svc.id}','${f.slug}')">
+        <div class="group-row-left">
+          <div class="group-row-name">${f.name}${f.mutable ? `<span class="feat-tag feat-tag-mutable">mutable</span>` : ''}${f.metering && f.metering !== 'static' ? `<span class="feat-tag feat-tag-metered">${f.metering}</span>` : ''}</div>
+          <div class="mono" style="font-size:12px;color:var(--g400);margin-top:2px">${f.slug}</div>
+          <div style="font-size:13px;color:var(--g500);margin-top:4px">${f.desc}</div>
+        </div>
+        <div class="group-row-right">
+          <span class="badge ${typeBadge}">${f.type}</span>
+        </div>
+      </div>`;
+  });
+  h += `</div>`;
+  return h;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// METERS PAGE DATA
+// ═══════════════════════════════════════════════════════════════
+
+const METERS = [
+  { id:"m-build-min", slug:"build_minutes_usage", name:"Build Minutes Usage", service:"Docker Build", serviceId:"build", feature:"build_minutes_included_monthly", unit:"minutes", status:"active", external:"UBB · meter_2aBcD" },
+  { id:"m-tc-min", slug:"tc_runtime_minutes", name:"TC Runtime Minutes", service:"Testcontainers Cloud", serviceId:"testcontainers", feature:"tc_runtime_minutes_monthly", unit:"minutes", status:"active", external:"UBB · meter_3eFgH" },
+  { id:"m-scout-repo", slug:"scout_repository_count", name:"Scout Repository Count", service:"Docker Scout", serviceId:"scout", feature:"remote_repositories", unit:"count_distinct", status:"active", external:null },
+  { id:"m-gordon-credits", slug:"gordon_credit_usage", name:"Gordon Credit Usage", service:"Gordon", serviceId:"gordon", feature:"gordon_monthly_budget", unit:"requests", status:"active", external:"UBB · meter_4iJkL" },
+  { id:"m-hub-pulls", slug:"image_pull_count", name:"Image Pull Count", service:"Docker Hub", serviceId:"hub", feature:"image_pull_count_included_monthly", unit:"requests", status:"active", external:"UBB · meter_5mNpQ" },
+  { id:"m-sbx-cpu", slug:"sandbox_cpu", name:"Sandbox CPU Usage", service:"Docker Sandboxes", serviceId:"sandboxes", feature:"sandbox_cpu_usage", unit:"vcpu_hours", status:"active", external:"UBB · meter_6rStU" },
+  { id:"m-sbx-mem", slug:"sandbox_memory", name:"Sandbox Memory Usage", service:"Docker Sandboxes", serviceId:"sandboxes", feature:"sandbox_memory_usage", unit:"gb_hours", status:"active", external:"UBB · meter_7vWxY" },
+  { id:"m-sbx-stor", slug:"sandbox_storage", name:"Sandbox Storage Usage", service:"Docker Sandboxes", serviceId:"sandboxes", feature:"sandbox_storage_usage", unit:"gib_hours", status:"active", external:"UBB · meter_8zAbC" },
+  { id:"m-gordon-req", slug:"gordon_request_count", name:"Gordon Request Count", service:"Gordon", serviceId:"gordon", feature:"gordon_enabled", unit:"requests", status:"active", external:null },
+];
+
+const METERED_RESOURCES = [
+  { id:"r-std-build", slug:"standard_build", name:"Standard Build", service:"Docker Build", serviceId:"build", desc:"Standard cloud builder instance (4 CPU / 8 GB)", status:"active", meters:["m-build-min"] },
+  { id:"r-perf-build", slug:"performance_build", name:"Performance Build", service:"Docker Build", serviceId:"build", desc:"Performance cloud builder instance (8 CPU / 32 GB)", status:"active", meters:["m-build-min"] },
+  { id:"r-tc-worker", slug:"tc_worker", name:"TC Cloud Worker", service:"Testcontainers Cloud", serviceId:"testcontainers", desc:"Testcontainers Cloud worker instance", status:"active", meters:["m-tc-min"] },
+  { id:"r-sbx-small", slug:"2cpu_4gb", name:"Sandbox — Small", service:"Docker Sandboxes", serviceId:"sandboxes", desc:"2 vCPU, 4 GB RAM sandbox instance", status:"active", meters:["m-sbx-cpu","m-sbx-mem","m-sbx-stor"] },
+  { id:"r-sbx-med", slug:"4cpu_8gb", name:"Sandbox — Medium", service:"Docker Sandboxes", serviceId:"sandboxes", desc:"4 vCPU, 8 GB RAM sandbox instance", status:"active", meters:["m-sbx-cpu","m-sbx-mem","m-sbx-stor"] },
+  { id:"r-sbx-lg", slug:"8cpu_16gb", name:"Sandbox — Large", service:"Docker Sandboxes", serviceId:"sandboxes", desc:"8 vCPU, 16 GB RAM sandbox instance", status:"active", meters:["m-sbx-cpu","m-sbx-mem","m-sbx-stor"] },
+  { id:"r-gordon-tok", slug:"gordon_token", name:"Gordon Token", service:"Gordon", serviceId:"gordon", desc:"Gordon AI credit unit", status:"active", meters:["m-gordon-credits","m-gordon-req"] },
+];
+
+let metersTab = 'meters'; // 'meters' or 'resources'
+
+// Flat feature list for pricing dropdowns (grouped by service)
+function getAllFeatures() {
+  let feats = [];
+  Object.keys(SERVICE_FEATURES).forEach(svcId => {
+    const svc = SERVICES.find(s => s.id === svcId);
+    SERVICE_FEATURES[svcId].forEach(f => {
+      feats.push({ ...f, svcId, svcName: svc ? svc.name : svcId });
+    });
+  });
+  return feats;
+}
+function getMutableAndMeteredFeatures() {
+  return getAllFeatures().filter(f => f.mutable || (f.metering && f.metering !== 'static'));
+}
+function getResourcesForMeter(meterId) {
+  return METERED_RESOURCES.filter(r => r.meters.includes(meterId));
+}
+function getResourcesForFeature(featSlug) {
+  // Find meters linked to this feature, then resources linked to those meters
+  const linkedMeters = METERS.filter(m => m.feature === featSlug);
+  if (linkedMeters.length === 0) return [];
+  let resources = [];
+  linkedMeters.forEach(m => {
+    getResourcesForMeter(m.id).forEach(r => {
+      if (!resources.find(x => x.id === r.id)) resources.push(r);
+    });
+  });
+  return resources;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// METERS VIEWS
+// ═══════════════════════════════════════════════════════════════
+
+function renderMetersIndex() {
+  let h = `
+    <div class="header-row">
+      <div>
+        <h1 class="page-title">Meters</h1>
+        <p class="page-sub">Usage tracking and billable resource configurations</p>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-item ${metersTab==='meters'?'active':''}" onclick="metersTab='meters'; render(true);">Meters <span style="font-weight:400;color:var(--g400)">${METERS.length}</span></button>
+      <button class="tab-item ${metersTab==='resources'?'active':''}" onclick="metersTab='resources'; render(true);">Metered Resources <span style="font-weight:400;color:var(--g400)">${METERED_RESOURCES.length}</span></button>
+    </div>`;
+
+  if (metersTab === 'meters') {
+    h += renderMetersList();
+  } else {
+    h += renderResourcesList();
+  }
+  return h;
+}
+
+function renderMetersList() {
+  let h = '<div class="list-container">';
+  METERS.forEach((m, i) => {
+    const statusCls = m.status === 'active' ? 'badge-sub' : 'badge-addon';
+    h += `
+      <div class="group-row fade-in" style="animation-delay:${i*30}ms" onclick="openMeterDrawer('${m.id}')">
+        <div class="group-row-left">
+          <div class="group-row-name">${m.name}</div>
+          <div style="font-size:12px;color:var(--g400);margin-top:2px" class="mono">${m.slug}</div>
+          <div style="font-size:13px;color:var(--g500);margin-top:4px">${m.service} → ${m.feature} · ${m.unit}</div>
+        </div>
+        <div class="group-row-right">
+          <span class="badge ${statusCls}">${m.status}</span>
+          ${m.external ? `<span style="font-size:11px;color:var(--g400)">${m.external}</span>` : `<span style="font-size:11px;color:var(--g300)">no external</span>`}
+        </div>
+      </div>`;
+  });
+  h += '</div>';
+  return h;
+}
+
+function renderResourcesList() {
+  let h = '<div class="list-container">';
+  METERED_RESOURCES.forEach((r, i) => {
+    const meterNames = r.meters.map(mid => { const m = METERS.find(x => x.id === mid); return m ? m.name : mid; });
+    h += `
+      <div class="group-row fade-in" style="animation-delay:${i*30}ms" onclick="openResourceDrawer('${r.id}')">
+        <div class="group-row-left">
+          <div class="group-row-name">${r.name}</div>
+          <div style="font-size:12px;color:var(--g400);margin-top:2px" class="mono">${r.slug}</div>
+          <div style="font-size:13px;color:var(--g500);margin-top:4px">${r.desc}</div>
+        </div>
+        <div class="group-row-right" style="flex-direction:column;align-items:flex-end;gap:4px">
+          <span class="badge badge-sub">${r.status}</span>
+          <span style="font-size:11px;color:var(--g400)">${r.meters.length} meter${r.meters.length!==1?'s':''}</span>
+        </div>
+      </div>`;
+  });
+  h += '</div>';
+  return h;
+}
+
+function openMeterDrawer(meterId) {
+  const m = METERS.find(x => x.id === meterId);
+  if (!m) return;
+  const linkedResources = METERED_RESOURCES.filter(r => r.meters.includes(m.id));
+  openDrawer(`
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-title">${m.name}</div>
+        <div class="mono" style="font-size:12px;color:var(--g400);margin-top:4px">${m.slug}</div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section" style="margin-top:8px">
+        <div class="drawer-section-label">Configuration</div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">Service</span>
+          <span class="drawer-row-value">${m.service}</span>
+        </div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">Feature</span>
+          <span class="drawer-row-value mono" style="font-size:12px">${m.feature}</span>
+        </div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">Unit type</span>
+          <span class="drawer-row-value">${m.unit}</span>
+        </div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">Status</span>
+          <span class="drawer-row-value"><span class="badge badge-sub">${m.status}</span></span>
+        </div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">External</span>
+          <span class="drawer-row-value">${m.external || '—'}</span>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-label">Linked Resources (${linkedResources.length})</div>
+        ${linkedResources.length > 0 ? linkedResources.map(r => `
+          <div class="svc-card" style="padding:12px 16px;margin-bottom:6px">
+            <div style="font-size:13px;font-weight:600;color:var(--g900)">${r.name}</div>
+            <div class="mono" style="font-size:12px;color:var(--g400);margin-top:2px">${r.slug}</div>
+            <div style="font-size:12px;color:var(--g500);margin-top:4px">${r.desc}</div>
+          </div>
+        `).join('') : '<div style="font-size:13px;color:var(--g400)">No resources linked to this meter.</div>'}
+      </div>
+    </div>
+  `);
+}
+
+function openResourceDrawer(resId) {
+  const r = METERED_RESOURCES.find(x => x.id === resId);
+  if (!r) return;
+  const linkedMeters = r.meters.map(mid => METERS.find(x => x.id === mid)).filter(Boolean);
+  openDrawer(`
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-title">${r.name}</div>
+        <div class="mono" style="font-size:12px;color:var(--g400);margin-top:4px">${r.slug}</div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <p style="font-size:13px;color:var(--g500);line-height:1.5">${r.desc}</p>
+      <div class="drawer-section">
+        <div class="drawer-section-label">Configuration</div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">Service</span>
+          <span class="drawer-row-value">${r.service}</span>
+        </div>
+        <div class="drawer-row">
+          <span class="drawer-row-label">Status</span>
+          <span class="drawer-row-value"><span class="badge badge-sub">${r.status}</span></span>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-label">Linked Meters (${linkedMeters.length})</div>
+        ${linkedMeters.map(m => `
+          <div class="svc-card" style="padding:12px 16px;margin-bottom:6px">
+            <div style="font-size:13px;font-weight:600;color:var(--g900)">${m.name}</div>
+            <div class="mono" style="font-size:12px;color:var(--g400);margin-top:2px">${m.slug}</div>
+            <div style="font-size:12px;color:var(--g500);margin-top:4px">${m.service} → ${m.feature} · ${m.unit}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CREATE FLOW
+// ═══════════════════════════════════════════════════════════════
+
+function renderCreate() {
+  const s = createState;
+  if (s.step === 'upfront' || s.step === 'pickgroup') return renderUpfront();
+  if (s.step === 'newgroup') return renderNewGroup();
+  if (s.step === 'workspace') return renderWorkspace();
+  if (s.step === 'wizard') return renderWizard();
+  if (s.step === 'published') return renderPublished();
+  return renderUpfront();
+}
+
+function renderUpfront() {
+  return `
+    <button class="back" onclick="navigate({view:'index'})">← Back to Offerings</button>
+    <h1 class="page-title">Create offering</h1>
+    <p class="page-sub">What are you setting up?</p>
+    <div class="select-card-grid" style="margin-top:20px">
+      <div class="select-card fade-in" onclick="navCreate({step:'newgroup',isNewGroup:true})">
+        <div class="select-card-icon">📦</div>
+        <div class="select-card-title">A new offering group</div>
+        <div class="select-card-desc">Launch a new product with one or more offerings</div>
+      </div>
+      <div class="select-card fade-in" style="animation-delay:40ms" onclick="navCreate({step:'pickgroup',isNewGroup:false})">
+        <div class="select-card-icon">＋</div>
+        <div class="select-card-title">Add to an existing offering group</div>
+        <div class="select-card-desc">Add an offering or add-on to an offering group already in the catalog</div>
+      </div>
+    </div>
+    ${createState.step === 'pickgroup' ? renderPickGroup() : ''}`;
+}
+
+function renderPickGroup() {
+  let h = `<div class="form-group fade-in">
+    <label class="form-label">Select offering group</label>
+    <select class="form-select" onchange="pickExistingGroup(this.value)">
+      <option value="">Choose a group…</option>`;
+  GROUPS.forEach(g => { h += `<option value="${g.id}">${g.name}</option>`; });
+  // Also show any newly created groups from this session
+  createState.wsOfferings.forEach(() => {});
+  h += `</select></div>`;
+  return h;
+}
+
+function pickExistingGroup(gid) {
+  if (!gid) return;
+  const g = groupById(gid);
+  createState.workspaceGroupId = gid;
+  createState.groupName = g.name;
+  createState.groupSlug = g.slug || g.id;
+  createState.groupDesc = g.desc;
+  createState.isNewGroup = false;
+  // Populate workspace with existing offerings from this group
+  createState.wsOfferings = offeringsForGroup(gid).map(o => ({
+    id: o.id, name: o.name, slug: o.slug, desc: o.desc, pkg: o.pkg, mon: o.mon, acct: o.acct,
+    price: o.price, cycle: o.cycle, altPrice: o.altPrice, altCycle: o.altCycle,
+    status: o.status, requires: o.requires, isAddon: o.pkg === 'add_on'
+  }));
+  navCreate({step:'workspace'});
+}
+
+function renderNewGroup() {
+  const s = createState;
+  return `
+    <button class="back" onclick="navigate({view:'index'}); resetCreateState();">← Back to Offerings</button>
+    <h1 class="page-title">New offering group</h1>
+    <p class="page-sub">An offering group is a collection of related offerings — like Docker's core subscriptions (Personal, Pro, Team, Business) or a standalone product like Sandboxes.</p>
+    <div class="wizard-step fade-in" style="margin-top:20px">
+      <div class="form-group" style="margin-top:0">
+        <label class="form-label">Name</label>
+        <input class="form-input" placeholder="e.g. Docker Hardened Images" value="${s.groupName}" oninput="createState.groupName=this.value; if(!createState._slugEdited) createState.groupSlug=slugify(this.value); document.getElementById('group-continue-btn').disabled=!this.value;" autofocus />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description <span class="form-hint">optional</span></label>
+        <textarea class="form-textarea" placeholder="Describe this offering group" oninput="createState.groupDesc=this.value">${s.groupDesc}</textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="navigate({view:'index'}); resetCreateState();">Cancel</button>
+        <button id="group-continue-btn" class="btn-primary" ${!s.groupName ? 'disabled' : ''} onclick="createNewGroup()">Create offering group →</button>
+      </div>
+    </div>`;
+}
+
+function createNewGroup() {
+  createState.workspaceGroupId = 'new-' + slugify(createState.groupName);
+  createState.isNewGroup = true;
+  createState.wsOfferings = [];
+  navCreate({step:'workspace'});
+}
+
+function renderWorkspace() {
+  const s = createState;
+  const offerings = s.wsOfferings.filter(o => !o.isAddon);
+  const addons = s.wsOfferings.filter(o => o.isAddon);
+  const allDraft = s.wsOfferings.length > 0 && s.wsOfferings.every(o => o.status === 'draft');
+  const hasDraft = s.wsOfferings.some(o => o.status === 'draft');
+
+  let h = `
+    <button class="back" onclick="navigate({view:'index'}); resetCreateState();">← Offerings</button>
+    <div class="header-row">
+      <div>
+        <h1 class="page-title">${s.groupName}</h1>
+        ${s.groupDesc ? `<p class="page-sub">${s.groupDesc}</p>` : ''}
+        <div class="oc-slug mono" style="margin-top:4px">${s.groupSlug}</div>
+      </div>
+      ${hasDraft ? `<button class="btn-primary" onclick="publishAll()">Publish all</button>` : ''}
+    </div>
+    <div class="section-label" style="margin-top:24px">Offerings</div>`;
+
+  if (offerings.length === 0) {
+    h += `<div class="empty-zone">No base offerings yet. Click below to add one.</div>`;
+  }
+  offerings.forEach((o, i) => {
+    h += wsCard(o, i);
+  });
+  h += `<div class="ws-add-btn" onclick="startWizard(false)">+ Add offering</div>`;
+
+  h += `<div class="section-label" style="margin-top:24px">Add-Ons</div>
+    <div style="height:1px;background:var(--g100);margin-bottom:12px"></div>`;
+
+  if (addons.length === 0 && offerings.length === 0) {
+    h += `<div class="empty-zone">No add-ons yet. Add base offerings first, or create add-ons that attach to other offering groups.</div>`;
+  } else if (addons.length === 0) {
+    h += `<div class="empty-zone">No add-ons yet.</div>`;
+  }
+  addons.forEach((o, i) => {
+    h += wsCard(o, i, true);
+  });
+  h += `<div class="ws-add-btn" onclick="startWizard(true)">+ Add add-on</div>`;
+
+  return h;
+}
+
+function wsCard(o, idx, isAddon) {
+  const menuOpen = createState.activeMenu === o.id;
+  return `
+    <div class="ws-card ${isAddon ? 'addon' : ''} fade-in" style="animation-delay:${idx*30}ms">
+      <div class="ws-card-left">
+        <div class="ws-card-name">${o.name || '(untitled)'}</div>
+        <div class="ws-card-meta mono">${o.slug || '—'} · ${o.pkg === 'add_on' ? 'add-on' : 'offering'} · ${o.mon || '—'}${o.requires ? ` · requires: ${o.requires}` : ''}</div>
+      </div>
+      <div class="ws-card-right">
+        ${o.price ? `<span class="mono" style="font-size:12px;font-weight:600;color:var(--g900)">${o.price}</span>` : ''}
+        <span class="ws-status ${o.status || 'draft'}">${o.status || 'draft'}</span>
+        <div class="ws-menu-btn" onclick="event.stopPropagation(); createState.activeMenu=createState.activeMenu==='${o.id}'?null:'${o.id}'; render(true);">
+          ⋯
+          ${menuOpen ? `
+          <div class="ws-menu" onclick="event.stopPropagation()">
+            <button class="ws-menu-item" onclick="editWsOffering('${o.id}')">Edit</button>
+            <button class="ws-menu-item" onclick="duplicateWsOffering('${o.id}')">Duplicate</button>
+            ${o.status === 'draft' ? `<button class="ws-menu-item" onclick="publishOne('${o.id}')">Publish</button>` : ''}
+            <button class="ws-menu-item danger" onclick="deleteWsOffering('${o.id}')">Delete</button>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function launchWizardNew() {
+  resetCreateState();
+  createState.isNewGroup = true;
+  createState.step = 'newgroup';
+  state.view = 'create';
+  _shouldScroll = true;
+  render();
+}
+
+function toggleCreateMenu() {
+  const el = document.getElementById('create-menu');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+function closeCreateMenu() {
+  const el = document.getElementById('create-menu');
+  if (el) el.style.display = 'none';
+}
+
+function launchCreateOffering() {
+  resetCreateState();
+  createState.step = 'wizard';
+  createState.wizardStep = 1;
+  state.view = 'create';
+  _shouldScroll = true;
+  render();
+}
+
+function launchCreateAddon() {
+  resetCreateState();
+  createState.isAddon = true;
+  createState.offPkg = 'add_on';
+  createState.step = 'wizard';
+  createState.wizardStep = 1;
+  state.view = 'create';
+  _shouldScroll = true;
+  render();
+}
+
+function launchWizardFromGroup(groupId, isAddon) {
+  resetCreateState();
+  const g = groupById(groupId);
+  if (g) {
+    createState.workspaceGroupId = g.id;
+    createState.groupName = g.name;
+    createState.groupSlug = g.slug || g.id;
+    createState.groupDesc = g.desc;
+    createState.isNewGroup = false;
+  }
+  createState.isAddon = isAddon;
+  if (isAddon) createState.offPkg = 'add_on';
+  createState.step = 'wizard';
+  createState.wizardStep = 1;
+  createState._launchedFromGroup = groupId;
+  if (isAddon) {
+    createState.offDep = 'group';
+    createState.offDepTarget = '';
+  }
+  state.view = 'create';
+  _shouldScroll = true;
+  render();
+}
+
+function startWizard(isAddon, duplicateId) {
+  resetWizard();
+  createState.isAddon = isAddon;
+  createState.activeMenu = null;
+  if (isAddon) createState.offPkg = 'add_on';
+  if (duplicateId) {
+    const src = createState.wsOfferings.find(o => o.id === duplicateId);
+    if (src) {
+      createState.duplicateFrom = src;
+      createState.offDesc = src.desc || '';
+      createState.offAcct = src.acct || 'organization';
+      createState.offMon = src.mon || '';
+      createState.offFreeOrPaid = src.price === '$0' ? 'free' : 'paid';
+      createState.offPrice = src.price || '';
+      createState.offFeature = src.requires || '';
+    }
+  }
+  navCreate({step:'wizard'});
+}
+
+function editWsOffering(id) { createState.activeMenu = null; render(true); }
+function duplicateWsOffering(id) { const src = createState.wsOfferings.find(o => o.id === id); startWizard(src && src.isAddon, id); }
+function deleteWsOffering(id) { createState.wsOfferings = createState.wsOfferings.filter(o => o.id !== id); createState.activeMenu = null; render(true); }
+function publishOne(id) { const o = createState.wsOfferings.find(o => o.id === id); if(o) o.status = 'active'; createState.activeMenu = null; render(true); }
+function publishAll() { createState.wsOfferings.forEach(o => { if(o.status==='draft') o.status = 'active'; }); render(true); }
+
+// ═══════════════════════════════════════════════════════════════
+// WIZARD
+// ═══════════════════════════════════════════════════════════════
+
+function renderWizard() {
+  const s = createState;
+  const stepNames = ['Basics', 'Pricing', 'Features & Review'];
+
+  let h = `
+    <button class="back" onclick="goBackFromWizard()">← Back</button>
+    <h1 class="page-title">${s.isAddon ? 'New add-on' : 'New offering'}${s.duplicateFrom ? ` <span style="font-size:13px;font-weight:400;color:var(--g400)">(from ${s.duplicateFrom.name})</span>` : ''}</h1>
+    <div class="wizard-stepper">`;
+
+  stepNames.forEach((name, i) => {
+    const num = i + 1;
+    const cls = num < s.wizardStep ? 'done' : num === s.wizardStep ? 'active' : 'pending';
+    const lineCls = num < s.wizardStep ? 'done' : '';
+    h += `<div class="wizard-step-item">
+      <span class="wizard-step-num ${cls}">${num < s.wizardStep ? '✓' : num}</span>
+      <span class="wizard-step-label ${cls}">${name}</span>
+    </div>`;
+    if (i < 2) h += `<div class="wizard-step-line ${lineCls}"></div>`;
+  });
+  h += `</div>`;
+
+  if (s.wizardStep === 1) h += renderWizardStep1();
+  else if (s.wizardStep === 2) h += renderWizardStep2();
+  else if (s.wizardStep === 3) h += renderWizardStep3();
+
+  return h;
+}
+
+function renderWizardStep1() {
+  const s = createState;
+  const hasGroup = s.workspaceGroupId || s.isNewGroup;
+  let h = `<div class="wizard-step fade-in">
+    <div class="form-group" style="margin-top:0">
+      <label class="form-label">Offering group</label>
+      <select class="form-select" onchange="handleGroupChange(this.value)">
+        ${!hasGroup ? '<option value="">Choose a group…</option>' : ''}
+        ${GROUPS.map(g => `<option value="${g.id}" ${s.workspaceGroupId === g.id ? 'selected' : ''}>${g.name}</option>`).join('')}
+        <option value="__new" ${s.isNewGroup ? 'selected' : ''}>+ Create new offering group</option>
+      </select>
+      ${s.isNewGroup ? `
+      <div style="margin-top:8px;padding:12px 14px;border:1px solid var(--g100);border-radius:4px;background:var(--g50)">
+        <label class="form-label" style="font-size:12px">New offering group name</label>
+        <input class="form-input" placeholder="e.g. Docker Offload" value="${s.groupName}" oninput="createState.groupName=this.value; createState.groupSlug=slugify(this.value);" />
+      </div>` : ''}
+    </div>
+    <div class="form-group">
+      <label class="form-label">Name</label>
+      <input class="form-input" placeholder="${s.isAddon ? 'e.g. ELS (Per-Repo)' : 'e.g. DHI — Enterprise (Per-Repo)'}" value="${s.offName}" oninput="createState.offName=this.value; if(!createState._offSlugEdited){ createState.offSlug=slugify(this.value); } var b=document.getElementById('wizard-s1-btn'); if(b) b.disabled=!(this.value && (createState.workspaceGroupId || createState.isNewGroup));" />
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px">
+      <div>
+        <label class="form-label">Which type of accounts can buy this?</label>
+        <select class="form-select" onchange="createState.offAcct=this.value;">
+          <option value="user" ${s.offAcct==='user'?'selected':''}>Users</option>
+          <option value="organization" ${s.offAcct==='organization'?'selected':''}>Organizations</option>
+          <option value="both" ${s.offAcct==='both'?'selected':''}>Both (Users & Organizations)</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Sales channel</label>
+        <select class="form-select" onchange="createState.offChannel=this.value;">
+          <option value="both" ${s.offChannel==='both'?'selected':''}>Both (Self-serve & Sales-led)</option>
+          <option value="self-serve" ${s.offChannel==='self-serve'?'selected':''}>Self-serve only</option>
+          <option value="sales-led" ${s.offChannel==='sales-led'?'selected':''}>Sales-led only</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description <span class="form-hint">optional</span></label>
+      <textarea class="form-textarea" placeholder="Describe this offering" oninput="createState.offDesc=this.value">${s.offDesc}</textarea>
+    </div>`;
+
+  if (s.isAddon) {
+    h += `<div class="form-group">
+      <label class="form-label">Dependency</label>
+      <div class="dep-picker">
+        <div class="radio-group">
+          <div class="radio-option ${s.offDep==='group'?'selected':''}" onclick="createState.offDep='group'; render(true);">
+            <div class="radio-dot"></div>
+            <div><div class="radio-label">Any offering in this group</div>
+            <div class="radio-desc">Requires any ${s.groupName} offering</div></div>
+          </div>
+          <div class="radio-option ${s.offDep==='specific'?'selected':''}" onclick="createState.offDep='specific'; render(true);">
+            <div class="radio-dot"></div>
+            <div><div class="radio-label">Specific offerings in this group</div>
+            <div class="radio-desc">Pick which offerings this add-on can attach to</div></div>
+          </div>
+          <div class="radio-option ${s.offDep==='other'?'selected':''}" onclick="createState.offDep='other'; render(true);">
+            <div class="radio-dot"></div>
+            <div><div class="radio-label">An offering in a different group</div>
+            <div class="radio-desc">This add-on depends on offerings outside this group</div></div>
+          </div>
+        </div>
+        ${s.offDep === 'specific' ? `
+        <div class="form-group" style="margin-top:12px">
+          <select class="form-select" onchange="createState.offDepTarget=this.value; render(true);">
+            <option value="">Select offering…</option>
+            ${s.wsOfferings.filter(o=>!o.isAddon).map(o=>`<option value="${o.name}" ${s.offDepTarget===o.name?'selected':''}>${o.name}</option>`).join('')}
+          </select>
+          ${s.offDepTarget ? `<div style="margin-top:6px"><span class="badge badge-account">${s.offDepTarget}</span></div>` : ''}
+        </div>` : ''}
+        ${s.offDep === 'other' ? `
+        <div class="form-group" style="margin-top:12px">
+          <select class="form-select" onchange="createState.offDepTarget=this.value; render(true);">
+            <option value="">Select offering group…</option>
+            ${GROUPS.map(g=>`<option value="${g.name}" ${s.offDepTarget===g.name?'selected':''}>${g.name}</option>`).join('')}
+          </select>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  const canContinue = s.offName && (s.workspaceGroupId || s.isNewGroup);
+  h += `<div class="btn-row">
+    <button class="btn-secondary" onclick="goBackFromWizard()">Cancel</button>
+    <button id="wizard-s1-btn" class="btn-primary" ${canContinue ? '' : 'disabled'} onclick="createState.wizardStep=2; render(true);">Continue →</button>
+  </div></div>`;
+  return h;
+}
+
+function renderWizardStep2() {
+  const s = createState;
+  const groupName = s.isNewGroup ? s.groupName : (GROUPS.find(g=>g.id===s.workspaceGroupId)?.short || s.groupName);
+  let h = `<div class="wizard-step-collapsed" onclick="createState.wizardStep=1; render(true);">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="wizard-step-num done">✓</span>
+      <strong>${s.offName}</strong>
+      <span style="color:var(--g300)">·</span>
+      <span style="color:var(--g400);font-size:13px">${groupName}</span>
+      <span style="color:var(--g300)">·</span>
+      <span style="color:var(--g400);font-size:13px">${s.offAcct}</span>
+    </div>
+    <span style="font-size:12px;color:var(--blue);cursor:pointer">Edit</span>
+  </div>
+  <div class="wizard-step fade-in" style="margin-top:8px">`;
+
+  // Saved rate cards summary
+  if (s.rateCards.length > 0) {
+    h += `<div style="margin-bottom:16px">`;
+    s.rateCards.forEach((rc, i) => {
+      h += `<div class="rc-card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div>
+          <div style="font-size:13px;font-weight:500;color:var(--g900)">${rc.label}</div>
+          <div style="font-size:12px;color:var(--g400);margin-top:2px">${rc.strategy} · ${rc.model} · ${rc.cycle}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="mono" style="font-size:13px;font-weight:600">${rc.price}</span>
+          <button style="border:none;background:none;color:var(--red);cursor:pointer;font-size:12px" onclick="createState.rateCards.splice(${i},1); render(true);">Remove</button>
+        </div>
+      </div>`;
+    });
+    h += `</div>`;
+  }
+
+  // Free or paid
+  h += `<div class="form-group" style="margin-top:0">
+    <label class="form-label">Is this offering free or paid?</label>
+    <div class="select-card-grid">
+      <div class="select-card ${s.offFreeOrPaid==='free'?'selected':''}" onclick="createState.offFreeOrPaid='free'; createState.offMon='subscription'; createState.offPrice='$0'; createState.offPricingModel='fixed'; render(true);" style="padding:14px">
+        <div class="select-card-title">Free</div>
+        <div class="select-card-desc">No charge to the customer</div>
+      </div>
+      <div class="select-card ${s.offFreeOrPaid==='paid'?'selected':''}" onclick="createState.offFreeOrPaid='paid'; createState.offPrice=''; render(true);" style="padding:14px">
+        <div class="select-card-title">Paid</div>
+        <div class="select-card-desc">Customers pay to access this</div>
+      </div>
+    </div>
+  </div>`;
+
+  if (s.offFreeOrPaid === 'paid') {
+    // Strategy
+    h += `<div class="form-group fade-in">
+      <label class="form-label">Monetization strategy</label>
+      <select class="form-select" onchange="createState.offMon=this.value; createState.rcFeature=''; createState.rcMeter=''; createState.rcResource=''; createState.offPricingModel=''; createState.offPrice=''; createState.offAnnualPrice=''; createState.rcBatchPrices={}; createState.rcTiers=[{from:'0',to:'1000',perUnit:'0',fixed:'0'},{from:'1001',to:'∞',perUnit:'',fixed:'0'}]; render(true);">
+        <option value="">Choose how customers pay…</option>
+        <option value="subscription" ${s.offMon==='subscription'?'selected':''}>Recurring subscription — charged monthly, annually, or both</option>
+        <option value="payg" ${s.offMon==='payg'?'selected':''}>Pay-as-you-go — charged based on actual usage</option>
+        <option value="prepaid" ${s.offMon==='prepaid'?'selected':''}>Prepaid — customer buys blocks upfront</option>
+        <option value="one_time" ${s.offMon==='one_time'?'selected':''}>One-time payment — single charge</option>
+      </select>
+    </div>`;
+
+    // === SUBSCRIPTION ===
+    if (s.offMon === 'subscription') {
+      const feats = getMutableAndMeteredFeatures();
+      const selFeat = feats.find(f => f.slug === s.rcFeature);
+      const resources = selFeat ? getResourcesForFeature(selFeat.slug) : [];
+
+      h += `<div class="form-group fade-in">
+        <label class="form-label">What is being charged for?</label>
+        <select class="form-select" onchange="createState.rcFeature=this.value; createState.rcResource=''; render(true);">
+          <option value="">Offering as a whole (flat fee)</option>`;
+      let lastSvc = '';
+      feats.forEach(f => {
+        if (f.svcName !== lastSvc) { if (lastSvc) h += `</optgroup>`; h += `<optgroup label="${f.svcName}">`; lastSvc = f.svcName; }
+        h += `<option value="${f.slug}" ${s.rcFeature===f.slug?'selected':''}>${f.name}${f.mutable?' (mutable)':''}${f.metering&&f.metering!=='static'?' ('+f.metering+')':''}</option>`;
+      });
+      if (lastSvc) h += `</optgroup>`;
+      h += `</select></div>`;
+
+      if (resources.length > 0) {
+        h += `<div class="form-group fade-in">
+          <label class="form-label">Which resource?</label>
+          <select class="form-select" onchange="createState.rcResource=this.value;">
+            <option value="">Select resource…</option>
+            ${resources.map(r => `<option value="${r.id}" ${s.rcResource===r.id?'selected':''}>${r.name} — ${r.desc}</option>`).join('')}
+          </select></div>`;
+      }
+
+      h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px" class="fade-in">
+        <div>
+          <label class="form-label">Pricing model</label>
+          <select class="form-select" onchange="createState.offPricingModel=this.value; render(true);">
+            <option value="fixed" ${s.offPricingModel==='fixed'?'selected':''}>Fixed amount</option>
+            <option value="per_unit" ${s.offPricingModel==='per_unit'?'selected':''}>Per unit (e.g. per seat)</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Billing period</label>
+          <select class="form-select" onchange="createState.offBillingCycle=this.value; render(true);">
+            <option value="both" ${s.offBillingCycle==='both'?'selected':''}>Monthly & annual</option>
+            <option value="monthly" ${s.offBillingCycle==='monthly'?'selected':''}>Monthly only</option>
+            <option value="annual" ${s.offBillingCycle==='annual'?'selected':''}>Annual only</option>
+          </select>
+        </div>
+      </div>`;
+
+      if (s.offBillingCycle === 'both') {
+        h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px" class="fade-in">
+          <div><label class="form-label">Monthly price</label>
+            <input class="form-input mono" placeholder="e.g. $20/seat" value="${s.offPrice}" oninput="createState.offPrice=this.value; updateS2Btn();" /></div>
+          <div><label class="form-label">Annual price</label>
+            <input class="form-input mono" placeholder="e.g. $180/seat" value="${s.offAnnualPrice}" oninput="createState.offAnnualPrice=this.value; updateS2Btn();" /></div>
+        </div>`;
+      } else {
+        h += `<div class="form-group fade-in">
+          <label class="form-label">${s.offBillingCycle === 'annual' ? 'Annual' : 'Monthly'} price</label>
+          <input class="form-input mono" placeholder="e.g. $20/seat" value="${s.offPrice}" oninput="createState.offPrice=this.value; updateS2Btn();" />
+        </div>`;
+      }
+
+      h += `<div class="form-group fade-in">
+        <label class="form-label">Billing timing</label>
+        <select class="form-select"><option selected>In advance</option><option>In arrears</option></select>
+      </div>`;
+    }
+
+    // === PAYG ===
+    if (s.offMon === 'payg') {
+      const selMeter = METERS.find(m => m.id === s.rcMeter);
+      const resources = selMeter ? getResourcesForMeter(selMeter.id) : [];
+
+      h += `<div class="form-group fade-in">
+        <label class="form-label">Which meter?</label>
+        <select class="form-select" onchange="createState.rcMeter=this.value; createState.rcResource=''; createState.rcBatchPrices={}; render(true);">
+          <option value="">Select meter…</option>
+          ${METERS.map(m => `<option value="${m.id}" ${s.rcMeter===m.id?'selected':''}>${m.name} (${m.unit}) — ${m.service}</option>`).join('')}
+        </select></div>`;
+
+      if (selMeter) {
+        h += `<div class="form-group fade-in">
+          <label class="form-label">Pricing model</label>
+          <div class="select-card-grid">
+            ${['per_unit','block','graduated','volume'].map(model => {
+              const icons = {per_unit:[16,16,16,16,16],block:[14,14,22,22],graduated:[8,14,20,26],volume:[12,12,20,20]};
+              const labels = {per_unit:'Per unit',block:'Block',graduated:'Graduated',volume:'Volume'};
+              const descs = {per_unit:'Same price for every unit',block:'Fixed price per chunk',graduated:'Each unit priced by tier',volume:'All units at highest tier'};
+              const bars = icons[model].map((h,i) => {
+                let c = s.offPricingModel===model ? (model==='graduated'?['var(--blue)','#60A5FA','#93C5FD','#BFDBFE'][i]:'var(--blue)') : 'var(--g300)';
+                return `<div style="width:${model==='per_unit'?6:8}px;height:${h}px;background:${c};border-radius:1px"></div>`;
+              }).join('');
+              return `<div class="select-card ${s.offPricingModel===model?'selected':''}" onclick="createState.offPricingModel='${model}'; render(true);" style="padding:12px">
+                <div style="display:flex;gap:${model==='per_unit'?2:3}px;align-items:flex-end;margin-bottom:6px">${bars}</div>
+                <div class="select-card-title" style="font-size:12px">${labels[model]}</div>
+                <div class="select-card-desc" style="font-size:11px">${descs[model]}</div>
+              </div>`;
+            }).join('')}
+          </div></div>`;
+
+        // PAYG pricing inputs
+        if (s.offPricingModel === 'per_unit' || s.offPricingModel === 'block') {
+          // Batch resource pricing
+          if (resources.length > 0) {
+            h += `<div class="form-group fade-in">
+              <label class="form-label">${s.offPricingModel === 'block' ? 'Block pricing per resource' : 'Price per resource'}</label>
+              <div class="svc-card"><table class="feat-table"><thead><tr>
+                <th>Resource</th>
+                ${s.offPricingModel === 'block' ? '<th style="width:100px;text-align:right">Block size</th>' : ''}
+                <th style="width:160px;text-align:right">Price / ${selMeter.unit}</th>
+              </tr></thead><tbody>`;
+            resources.forEach(r => {
+              const val = s.rcBatchPrices[r.id] || '';
+              h += `<tr>
+                <td><span style="font-weight:500">${r.name}</span><div style="font-size:11px;color:var(--g400)">${r.desc}</div></td>
+                ${s.offPricingModel === 'block' ? `<td style="text-align:right"><input class="form-input mono" style="width:80px;display:inline;text-align:right" placeholder="500" /></td>` : ''}
+                <td style="text-align:right"><input class="form-input mono" style="width:120px;display:inline;text-align:right" placeholder="${s.offPricingModel==='block'?'$25':'$0.035'}" value="${val}" oninput="createState.rcBatchPrices['${r.id}']=this.value; updateS2Btn();" /></td>
+              </tr>`;
+            });
+            h += `</tbody></table></div>
+              <div style="font-size:11px;color:var(--g400);margin-top:4px">Leave price empty to skip a resource. Billing: monthly · in arrears.</div>
+            </div>`;
+          } else {
+            h += `<div class="form-group fade-in">
+              <label class="form-label">Price</label>
+              <input class="form-input mono" placeholder="${s.offPricingModel==='block'?'e.g. $25/500-min':'e.g. $0.035/hr'}" value="${s.offPrice}" oninput="createState.offPrice=this.value; updateS2Btn();" />
+            </div>`;
+          }
+        }
+
+        if (s.offPricingModel === 'graduated' || s.offPricingModel === 'volume') {
+          h += `<div class="form-group fade-in">
+            <label class="form-label">${s.offPricingModel === 'graduated' ? 'Graduated' : 'Volume'} tier pricing</label>
+            <div class="svc-card"><table class="feat-table"><thead><tr>
+              <th style="width:100px">From</th>
+              <th style="width:100px">To</th>
+              <th style="width:120px;text-align:right">Per unit ($)</th>
+              <th style="width:120px;text-align:right">Fixed ($)</th>
+              <th style="width:40px"></th>
+            </tr></thead><tbody>`;
+          s.rcTiers.forEach((t, i) => {
+            h += `<tr>
+              <td><input class="form-input mono" style="width:80px" value="${t.from}" oninput="createState.rcTiers[${i}].from=this.value;" /></td>
+              <td><input class="form-input mono" style="width:80px" value="${t.to}" oninput="createState.rcTiers[${i}].to=this.value;" /></td>
+              <td style="text-align:right"><input class="form-input mono" style="width:100px;text-align:right" placeholder="0.00" value="${t.perUnit}" oninput="createState.rcTiers[${i}].perUnit=this.value; updateS2Btn();" /></td>
+              <td style="text-align:right"><input class="form-input mono" style="width:100px;text-align:right" placeholder="0.00" value="${t.fixed}" oninput="createState.rcTiers[${i}].fixed=this.value;" /></td>
+              <td>${i > 0 ? `<button style="border:none;background:none;color:var(--red);cursor:pointer;font-size:16px" onclick="createState.rcTiers.splice(${i},1); render(true);">×</button>` : ''}</td>
+            </tr>`;
+          });
+          h += `</tbody></table></div>
+            <button class="btn-secondary" style="margin-top:6px;padding:6px 12px;font-size:12px" onclick="createState.rcTiers.push({from:'',to:'∞',perUnit:'',fixed:'0'}); render(true);">+ Add tier</button>
+            <div style="font-size:11px;color:var(--g400);margin-top:8px">Billing: monthly · in arrears. ${s.offPricingModel==='graduated' ? 'Each unit priced by the tier it falls into.' : 'All units priced at the highest achieved tier.'}</div>
+          </div>`;
+        }
+      }
+    }
+
+    // === PREPAID ===
+    if (s.offMon === 'prepaid') {
+      const feats = getMutableAndMeteredFeatures();
+      const selFeat = feats.find(f => f.slug === s.rcFeature);
+      const resources = selFeat ? getResourcesForFeature(selFeat.slug) : [];
+
+      h += `<div class="form-group fade-in">
+        <label class="form-label">What is being sold?</label>
+        <select class="form-select" onchange="createState.rcFeature=this.value; createState.rcResource=''; render(true);">
+          <option value="">Select feature…</option>`;
+      let lastSvc = '';
+      feats.forEach(f => {
+        if (f.svcName !== lastSvc) { if (lastSvc) h += `</optgroup>`; h += `<optgroup label="${f.svcName}">`; lastSvc = f.svcName; }
+        h += `<option value="${f.slug}" ${s.rcFeature===f.slug?'selected':''}>${f.name}</option>`;
+      });
+      if (lastSvc) h += `</optgroup>`;
+      h += `</select></div>`;
+
+      if (resources.length > 0) {
+        h += `<div class="form-group fade-in">
+          <label class="form-label">Which resource?</label>
+          <select class="form-select" onchange="createState.rcResource=this.value;">
+            <option value="">Select resource…</option>
+            ${resources.map(r => `<option value="${r.id}" ${s.rcResource===r.id?'selected':''}>${r.name} — ${r.desc}</option>`).join('')}
+          </select></div>`;
+      }
+
+      h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px" class="fade-in">
+        <div><label class="form-label">Block size</label>
+          <input class="form-input mono" placeholder="e.g. 500 minutes" value="${s.offPrice ? '' : ''}" /></div>
+        <div><label class="form-label">Block price</label>
+          <input class="form-input mono" placeholder="e.g. $25" value="${s.offPrice}" oninput="createState.offPrice=this.value; updateS2Btn();" /></div>
+      </div>
+      <div class="form-group fade-in">
+        <label class="form-label">Expiration</label>
+        <select class="form-select">
+          <option selected>End of subscription period</option>
+          <option>End of billing period</option>
+          <option>Custom (set date)</option>
+        </select>
+      </div>`;
+    }
+
+    // === ONE-TIME ===
+    if (s.offMon === 'one_time') {
+      h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px" class="fade-in">
+        <div><label class="form-label">Price</label>
+          <input class="form-input mono" placeholder="e.g. $500" value="${s.offPrice}" oninput="createState.offPrice=this.value; updateS2Btn();" /></div>
+        <div><label class="form-label">Billing timing</label>
+          <select class="form-select"><option selected>Immediate</option><option>In advance</option></select></div>
+      </div>`;
+    }
+  }
+
+  // Continue validation
+  let canContinue = false;
+  if (s.offFreeOrPaid === 'free') canContinue = true;
+  else if (s.offMon === 'payg' && (s.offPricingModel === 'graduated' || s.offPricingModel === 'volume')) {
+    canContinue = s.rcTiers.some(t => t.perUnit && t.perUnit !== '0');
+  } else if (s.offMon === 'payg' && Object.keys(s.rcBatchPrices).length > 0) {
+    canContinue = Object.values(s.rcBatchPrices).some(v => v);
+  } else if (s.offMon && s.offPrice) canContinue = true;
+  if (s.rateCards.length > 0) canContinue = true;
+
+  h += `<div class="btn-row">
+    <button class="btn-secondary" onclick="createState.wizardStep=1; render(true);">← Back</button>
+    <button id="wizard-s2-btn" class="btn-primary" ${canContinue ? '' : 'disabled'} onclick="createState.wizardStep=3; render(true);">Continue →</button>
+  </div></div>`;
+  return h;
+}
+
+function renderWizardStep3() {
+  const s = createState;
+  const dupLabel = s.duplicateFrom ? ` (from ${s.duplicateFrom.name})` : '';
+
+  let h = `<div class="wizard-step-collapsed" onclick="createState.wizardStep=1; render(true);">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="wizard-step-num done">✓</span>
+      <strong>${s.offName}</strong>
+      <span style="color:var(--g300)">·</span>
+      <span style="color:var(--g400);font-size:13px">${s.offAcct}</span>
+    </div>
+    <span style="font-size:12px;color:var(--blue);cursor:pointer">Edit</span>
+  </div>
+  <div class="wizard-step-collapsed" style="margin-top:4px" onclick="createState.wizardStep=2; render(true);">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="wizard-step-num done">✓</span>
+      <strong>${s.offFreeOrPaid === 'free' ? 'Free' : (s.offMon || '—')}</strong>
+      <span style="color:var(--g300)">·</span>
+      <span style="color:var(--g400);font-size:13px">${s.offPrice}${s.offAnnualPrice ? ' / '+s.offAnnualPrice : ''}</span>
+    </div>
+    <span style="font-size:12px;color:var(--blue);cursor:pointer">Edit</span>
+  </div>
+  <div class="wizard-step fade-in" style="margin-top:8px">
+    <div class="section-label" style="margin-top:0">Step 3 · Features & Review</div>`;
+
+  // Services to select from
+  h += `<div class="form-group" style="margin-top:12px">
+    <label class="form-label">Select services to include</label>
+    <p style="font-size:12px;color:var(--g400);margin-bottom:8px">${s.duplicateFrom ? 'Services carried over from ' + s.duplicateFrom.name + '. Adjust as needed.' : 'Choose which services this offering provides access to.'}</p>`;
+
+  SERVICES.slice(0, 6).forEach(svc => {
+    h += `<div style="display:flex;align-items:center;gap:8px;padding:6px 0">
+      <input type="checkbox" id="svc-${svc.id}" checked style="accent-color:var(--blue)" />
+      <label for="svc-${svc.id}" style="font-size:13px;color:var(--g900);cursor:pointer">${svc.name} <span style="color:var(--g400);font-size:11px">${svc.featureCount} features</span></label>
+    </div>`;
+  });
+  h += `</div>`;
+
+  // Review section
+  h += `<div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--g200)">
+    <div class="section-label" style="margin-top:0">Review</div>
+    <div class="rc-card" style="margin-top:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="svc-name">${s.offName || '(untitled)'}</div>
+          <div class="svc-slug mono">${s.offSlug || '—'}</div>
+          ${s.offDesc ? `<div style="font-size:13px;color:var(--g500);margin-top:4px">${s.offDesc}</div>` : ''}
+        </div>
+        <div style="text-align:right">
+          <div class="mono" style="font-size:13px;font-weight:600">${s.offPrice || '$0'}</div>
+          ${s.offAnnualPrice ? `<div style="font-size:11px;color:var(--g400)">${s.offAnnualPrice} annual</div>` : ''}
+        </div>
+      </div>
+      <div class="meta-row" style="margin-top:8px">
+        ${pkgBadge(s.isAddon ? 'add_on' : 'standalone')}
+        ${monBadge(s.offMon || 'subscription', s.offPrice)}
+        ${acctBadge(s.offAcct)}
+      </div>
+      ${s.isAddon && s.offDepTarget ? `<div class="oc-dep" style="margin-top:6px">requires: ${s.offDepTarget}</div>` : ''}
+      ${s.isAddon && s.offDep === 'group' ? `<div class="oc-dep" style="margin-top:6px">requires: any ${s.groupName} offering</div>` : ''}
+    </div>
+  </div>`;
+
+  h += `<div class="btn-row">
+    <button class="btn-secondary" onclick="createState.wizardStep=2; render(true);">← Back</button>
+    <button class="btn-secondary" onclick="saveOffering(false)">Save & add another</button>
+    <button class="btn-primary" onclick="saveOffering(true)">${createState._launchedFromGroup ? 'Save & return' : 'Save & return to workspace'}</button>
+  </div></div>`;
+  return h;
+}
+
+function saveOffering(returnToWorkspace) {
+  const s = createState;
+  // Auto-determine package type: add_on if from add-on flow, otherwise standalone
+  // (In production, bundle vs standalone would be inferred from service count in Step 3)
+  const pkg = s.isAddon ? 'add_on' : 'standalone';
+  const newOff = {
+    id: 'new-' + Date.now(),
+    name: s.offName, slug: s.offSlug, desc: s.offDesc,
+    pkg: pkg,
+    mon: s.offMon || 'subscription',
+    acct: s.offAcct,
+    price: s.offPrice || '$0',
+    cycle: s.offBillingCycle === 'both' ? 'monthly' : (s.offBillingCycle || '—'),
+    altPrice: s.offAnnualPrice || null,
+    altCycle: s.offAnnualPrice ? 'annual' : null,
+    status: 'draft',
+    requires: s.isAddon ? (s.offDepTarget || (s.offDep === 'group' ? 'any ' + s.groupName + ' offering' : '')) : null,
+    isAddon: s.isAddon,
+  };
+  s.wsOfferings.push(newOff);
+
+  if (returnToWorkspace) {
+    if (s._launchedFromGroup) {
+      // Go back to group detail page
+      navigate({view:'group', groupId:s._launchedFromGroup});
+      resetCreateState();
+    } else {
+      navCreate({step:'workspace'});
+    }
+  } else {
+    startWizard(false);
+  }
+}
+
+function renderPublished() {
+  const s = createState;
+  return `
+    <div class="success-card fade-in">
+      <div class="success-title">✓ ${s.groupName} has been published</div>
+      <p style="font-size:13px;color:var(--g600);margin-top:8px">${s.wsOfferings.filter(o=>o.status==='active').length} offerings are now active in the catalog.</p>
+      <div class="success-list" style="margin-top:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--g500);margin-bottom:8px">Downstream systems that may need updating:</div>
+        <div class="success-list-item">Stripe — product and price sync</div>
+        <div class="success-list-item">Salesforce — catalog update</div>
+        <div class="success-list-item">Metering service — meter configuration</div>
+        <div class="success-list-item">Product UI (App, Desktop) — feature flags</div>
+        <div class="success-list-item">docker.com (marketing) — pricing page</div>
+        <div class="success-list-item">Anrok (tax) — tax configuration</div>
+      </div>
+    </div>
+    <div class="btn-row" style="border-top:none;padding-top:0">
+      <button class="btn-secondary" onclick="navigate({view:'index'}); resetCreateState();">View catalog</button>
+      <button class="btn-primary" onclick="resetCreateState(); navCreate({step:'upfront'});">Create another offering group</button>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════════════════
+
+let catalogsOpen = true;
+
+function renderSidebar() {
+  const page = currentPage();
+  const catalogActive = page === "offerings" || page === "features" || page === "meters";
+
+  const iconCatalogs = `<svg class="section-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
+  const iconChevron = `<svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+  const iconReporting = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`;
+
+  document.getElementById("sidebar").innerHTML = `
+    <div style="padding:0 12px 12px">
+      <div style="position:relative">
+        <span class="env-dot ${currentEnv}" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);z-index:1"></span>
+        <select class="env-select" style="margin:0;width:100%;padding-left:24px" onchange="currentEnv=this.value; render();">
+          <option value="staging" ${currentEnv==='staging'?'selected':''}>Staging</option>
+          <option value="production" ${currentEnv==='production'?'selected':''}>Production</option>
+        </select>
+      </div>
+    </div>
+    <div class="nav-section">
+      <button class="nav-section-header ${catalogActive?"active":""} ${catalogsOpen?"":"collapsed"}" onclick="toggleCatalogs()">
+        ${iconCatalogs}
+        Catalog
+        ${iconChevron}
+      </button>
+      <div class="nav-section-body ${catalogsOpen?"":"collapsed"}">
+        <button class="nav-sub-item ${page==="offerings"?"active":""}" onclick="navigate({view:'index',groupId:null,offeringId:null,serviceId:null,scope:'all',mode:'list'})">Offerings</button>
+        <button class="nav-sub-item ${page==="features"?"active":""}" onclick="navigate({view:'features',groupId:null,offeringId:null,serviceId:null,scope:'all'})">Features</button>
+        <button class="nav-sub-item ${page==="meters"?"active":""}" onclick="navigate({view:'meters',groupId:null,offeringId:null,serviceId:null,scope:'all'})">Meters</button>
+      </div>
+    </div>
+    <button class="nav-top-item disabled">
+      ${iconReporting}
+      Reporting
+    </button>`;
+}
+
+function toggleCatalogs() {
+  catalogsOpen = !catalogsOpen;
+  renderSidebar();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+
+function render(skipSidebar) {
+  if (!skipSidebar) renderSidebar();
+  const app = document.getElementById("app");
+  if (state.view === "create") {
+    app.innerHTML = renderCreate();
+  } else if (state.view === "index") {
+    app.innerHTML = renderIndex();
+    if (state.mode === "graph") setTimeout(renderGraph, 10);
+  } else if (state.view === "group") {
+    app.innerHTML = renderGroupDetail();
+  } else if (state.view === "offering") {
+    app.innerHTML = renderOfferingDetail();
+  } else if (state.view === "features") {
+    app.innerHTML = renderFeaturesIndex();
+  } else if (state.view === "service") {
+    app.innerHTML = renderServiceDetail();
+  } else if (state.view === "meters") {
+    app.innerHTML = renderMetersIndex();
+  }
+  if (_shouldScroll) { window.scrollTo(0, 0); _shouldScroll = false; }
+}
+
+// Boot
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.create-menu-wrap')) closeCreateMenu();
+});
+render();
+</script>
+</body>
+</html>
