@@ -209,6 +209,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
     if (state.monetizationStrategy === 'subscription') {
       if (!state.pricingModel) return false
       if (state.pricingModel === 'per-unit' && !state.selectedFeature) return false
+      if (!editingCard.billingTiming) return false
       if (!editingCard.billingPeriod) return false
 
       // Check that at least one price is entered
@@ -219,9 +220,9 @@ export default function CreateOfferingWizard({ isAddon = false }) {
       return true
     }
 
-    // For one-time, just validate price is filled
+    // For one-time, validate billing timing and price are filled
     if (state.monetizationStrategy === 'one-time') {
-      return !!editingCard.monthlyPrice
+      return !!editingCard.billingTiming && !!editingCard.monthlyPrice
     }
 
     // Other strategies (PAYG, prepaid) need at least one rate card
@@ -920,18 +921,59 @@ export default function CreateOfferingWizard({ isAddon = false }) {
 
   const renderOneTimeConfig = () => (
     <div className="mb-5">
-      <label className="block text-sm font-medium text-g-700 mb-1.5">Price</label>
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-g-500">$</span>
-        <input
-          type="number"
-          step="0.01"
-          value={editingCard.monthlyPrice}
-          onChange={(e) => setEditingCard({ ...editingCard, monthlyPrice: e.target.value, pricingModel: 'fixed' })}
-          placeholder="500.00"
-          className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
-        />
+      <label className="block text-sm font-medium text-g-700 mb-2">Billing timing</label>
+      <div className="space-y-2 mb-3">
+        {[
+          { value: 'advance', label: 'In-advance', desc: 'Customer pays immediately upon purchase' },
+          { value: 'arrears', label: 'In-arrears', desc: 'Customer pays after service delivery' }
+        ].map(({ value, label, desc }) => (
+          <label
+            key={value}
+            className={`flex items-start gap-3 p-3 border rounded cursor-pointer transition-all ${
+              editingCard.billingTiming === value
+                ? 'border-blue bg-blue-light/20'
+                : 'border-g-200 hover:border-g-300'
+            }`}
+          >
+            <div className={`w-4 h-4 border-2 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5 ${
+              editingCard.billingTiming === value ? 'border-blue' : 'border-g-300'
+            }`}>
+              {editingCard.billingTiming === value && (
+                <div className="w-2 h-2 bg-blue rounded-full" />
+              )}
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-g-900">{label}</div>
+              <div className="text-xs text-g-500 mt-0.5">{desc}</div>
+            </div>
+            <input
+              type="radio"
+              name="billing-timing-onetime"
+              value={value}
+              checked={editingCard.billingTiming === value}
+              onChange={() => setEditingCard({ ...editingCard, billingTiming: value, pricingModel: 'fixed' })}
+              className="sr-only"
+            />
+          </label>
+        ))}
       </div>
+
+      {editingCard.billingTiming && (
+        <>
+          <label className="block text-sm font-medium text-g-700 mb-1.5">Price</label>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-g-500">$</span>
+            <input
+              type="number"
+              step="0.01"
+              value={editingCard.monthlyPrice}
+              onChange={(e) => setEditingCard({ ...editingCard, monthlyPrice: e.target.value, pricingModel: 'fixed' })}
+              placeholder="500.00"
+              className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
+            />
+          </div>
+        </>
+      )}
     </div>
   )
 
@@ -1039,10 +1081,10 @@ export default function CreateOfferingWizard({ isAddon = false }) {
               </p>
               <div className="space-y-1.5">
                 {[
-                  { value: 'subscription', label: 'Subscription', desc: 'Recurring charge (monthly or annual). Example: $20/user/month', billingTiming: 'advance', pricingModel: '' },
+                  { value: 'subscription', label: 'Subscription', desc: 'Recurring charge (monthly or annual). Example: $20/user/month', pricingModel: '' },
                   { value: 'payg', label: 'Pay-as-you-go', desc: 'Charged based on usage at end of period. Example: $0.05 per build minute', billingTiming: 'arrears', pricingModel: '' },
                   { value: 'prepaid', label: 'Pre-paid with top-ups', desc: 'Customer buys blocks upfront and draws down. Example: 500 minutes for $25', billingTiming: 'immediate', pricingModel: 'block' },
-                  { value: 'one-time', label: 'One-time', desc: 'Single payment with no recurrence. Example: $500 setup fee', billingTiming: 'immediate', pricingModel: 'fixed' }
+                  { value: 'one-time', label: 'One-time', desc: 'Single payment with no recurrence. Example: $500 setup fee', pricingModel: 'fixed' }
                 ].map(({ value, label, desc, billingTiming, pricingModel }) => {
                   const isSelected = state.monetizationStrategy === value
                   return (
@@ -1051,11 +1093,15 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                       onClick={() => {
                         dispatch({ type: 'SET_FIELD', field: 'monetizationStrategy', value })
                         // Set default billing timing and pricing model based on strategy
-                        setEditingCard(prev => ({
-                          ...prev,
-                          billingTiming,
+                        const defaults = {
+                          ...(billingTiming && { billingTiming }),
                           ...(pricingModel && { pricingModel })
-                        }))
+                        }
+                        // Default to 'advance' for subscription and one-time
+                        if (value === 'subscription' || value === 'one-time') {
+                          defaults.billingTiming = 'advance'
+                        }
+                        setEditingCard(prev => ({ ...prev, ...defaults }))
                       }}
                       className={`flex items-start gap-3 p-3 border rounded cursor-pointer transition-all ${
                         isSelected
@@ -1168,8 +1214,50 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                               })}
                             </select>
 
-                            {/* Billing period and price inputs - shown immediately after feature selection */}
+                            {/* Billing timing selector - shown after feature selection */}
                             {state.selectedFeature && (
+                              <>
+                                <label className="block text-sm font-medium text-g-700 mb-2">Billing timing</label>
+                                <div className="space-y-2 mb-3">
+                                  {[
+                                    { value: 'advance', label: 'In-advance', desc: 'Customer pays before the billing period starts' },
+                                    { value: 'arrears', label: 'In-arrears', desc: 'Customer pays after the billing period ends' }
+                                  ].map(({ value, label, desc }) => (
+                                    <label
+                                      key={value}
+                                      className={`flex items-start gap-3 p-3 border rounded cursor-pointer transition-all ${
+                                        editingCard.billingTiming === value
+                                          ? 'border-blue bg-blue-light/20'
+                                          : 'border-g-200 hover:border-g-300'
+                                      }`}
+                                    >
+                                      <div className={`w-4 h-4 border-2 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5 ${
+                                        editingCard.billingTiming === value ? 'border-blue' : 'border-g-300'
+                                      }`}>
+                                        {editingCard.billingTiming === value && (
+                                          <div className="w-2 h-2 bg-blue rounded-full" />
+                                        )}
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="text-sm font-medium text-g-900">{label}</div>
+                                        <div className="text-xs text-g-500 mt-0.5">{desc}</div>
+                                      </div>
+                                      <input
+                                        type="radio"
+                                        name="billing-timing-per-unit"
+                                        value={value}
+                                        checked={editingCard.billingTiming === value}
+                                        onChange={() => setEditingCard({ ...editingCard, billingTiming: value })}
+                                        className="sr-only"
+                                      />
+                                    </label>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+
+                            {/* Billing period and price inputs - shown after billing timing */}
+                            {state.selectedFeature && editingCard.billingTiming && (
                               <>
                                 <label className="block text-sm font-medium text-g-700 mb-2">Billing cycles</label>
                                 <div className="space-y-2 mb-3">
@@ -1295,13 +1383,52 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                         {/* Flat fee pricing - shown immediately after selecting flat fee */}
                         {state.pricingModel === 'fixed' && (
                           <>
-                            <label className="block text-sm font-medium text-g-700 mb-2">Billing cycles</label>
+                            <label className="block text-sm font-medium text-g-700 mb-2">Billing timing</label>
                             <div className="space-y-2 mb-3">
                               {[
-                                { value: 'monthly', label: 'Monthly' },
-                                { value: 'annual', label: 'Annual' },
-                                { value: 'both', label: 'Monthly & annual' }
-                              ].map(({ value, label }) => (
+                                { value: 'advance', label: 'In-advance', desc: 'Customer pays before the billing period starts' },
+                                { value: 'arrears', label: 'In-arrears', desc: 'Customer pays after the billing period ends' }
+                              ].map(({ value, label, desc }) => (
+                                <label
+                                  key={value}
+                                  className={`flex items-start gap-3 p-3 border rounded cursor-pointer transition-all ${
+                                    editingCard.billingTiming === value
+                                      ? 'border-blue bg-blue-light/20'
+                                      : 'border-g-200 hover:border-g-300'
+                                  }`}
+                                >
+                                  <div className={`w-4 h-4 border-2 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5 ${
+                                    editingCard.billingTiming === value ? 'border-blue' : 'border-g-300'
+                                  }`}>
+                                    {editingCard.billingTiming === value && (
+                                      <div className="w-2 h-2 bg-blue rounded-full" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="text-sm font-medium text-g-900">{label}</div>
+                                    <div className="text-xs text-g-500 mt-0.5">{desc}</div>
+                                  </div>
+                                  <input
+                                    type="radio"
+                                    name="billing-timing-flat"
+                                    value={value}
+                                    checked={editingCard.billingTiming === value}
+                                    onChange={() => setEditingCard({ ...editingCard, billingTiming: value })}
+                                    className="sr-only"
+                                  />
+                                </label>
+                              ))}
+                            </div>
+
+                            {editingCard.billingTiming && (
+                              <>
+                                <label className="block text-sm font-medium text-g-700 mb-2">Billing cycles</label>
+                                <div className="space-y-2 mb-3">
+                                  {[
+                                    { value: 'monthly', label: 'Monthly' },
+                                    { value: 'annual', label: 'Annual' },
+                                    { value: 'both', label: 'Monthly & annual' }
+                                  ].map(({ value, label }) => (
                                 <label
                                   key={value}
                                   className={`flex items-center gap-3 p-3 border rounded cursor-pointer transition-all ${
@@ -1397,6 +1524,8 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                               }
                               return null
                             })()}
+                              </>
+                            )}
                           </>
                         )}
                       </>
@@ -1486,8 +1615,8 @@ export default function CreateOfferingWizard({ isAddon = false }) {
               )}
             </div>
 
-            {/* Rate Cards Display - only for PAYG, Prepaid, One-time */}
-            {state.monetizationStrategy && state.monetizationStrategy !== 'subscription' && state.rateCards.length > 0 && (
+            {/* Rate Cards Display - only for PAYG, Prepaid */}
+            {state.monetizationStrategy && state.monetizationStrategy !== 'subscription' && state.monetizationStrategy !== 'one-time' && state.rateCards.length > 0 && (
               <>
                 <div className="border-t border-g-200 my-5" />
                 <div className="mb-5">
