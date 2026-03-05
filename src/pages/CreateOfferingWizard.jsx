@@ -1080,15 +1080,24 @@ export default function CreateOfferingWizard({ isAddon = false }) {
               </div>
             </div>
 
+            {/* One-time pricing - show directly after strategy selection */}
+            {state.monetizationStrategy === 'one-time' && (
+              <>
+                <div className="border-t border-g-200 my-5" />
+                {renderOneTimeConfig()}
+              </>
+            )}
+
             {/* What is being charged for? - Critical question after strategy */}
+            {/* Skip this section for one-time payments */}
             <div
               className="overflow-hidden transition-all duration-300 ease-in-out"
               style={{
-                maxHeight: state.monetizationStrategy ? '2000px' : '0',
-                opacity: state.monetizationStrategy ? 1 : 0
+                maxHeight: state.monetizationStrategy && state.monetizationStrategy !== 'one-time' ? '2000px' : '0',
+                opacity: state.monetizationStrategy && state.monetizationStrategy !== 'one-time' ? 1 : 0
               }}
             >
-              {state.monetizationStrategy && (
+              {state.monetizationStrategy && state.monetizationStrategy !== 'one-time' && (
                 <>
                   <div className="border-t border-g-200 my-5" />
 
@@ -1393,14 +1402,10 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                       </>
                     )}
 
-                    {/* For Prepaid, One-time: Feature picker */}
-                    {(state.monetizationStrategy === 'prepaid' ||
-                      state.monetizationStrategy === 'one-time') && (
+                    {/* For Prepaid: Feature picker */}
+                    {state.monetizationStrategy === 'prepaid' && (
                       <>
-                        <label className="block text-sm font-medium text-g-700 mb-1.5">
-                          {state.monetizationStrategy === 'prepaid' && 'What is being sold?'}
-                          {state.monetizationStrategy === 'one-time' && 'What is being charged for? (optional)'}
-                        </label>
+                        <label className="block text-sm font-medium text-g-700 mb-1.5">What is being sold?</label>
                         <select
                           value={state.selectedFeature}
                           onChange={(e) => {
@@ -1546,12 +1551,6 @@ export default function CreateOfferingWizard({ isAddon = false }) {
               <>
                 <div className="border-t border-g-200 my-5" />
                 {renderPrepaidConfig()}
-              </>
-            )}
-            {state.monetizationStrategy === 'one-time' && (
-              <>
-                <div className="border-t border-g-200 my-5" />
-                {renderOneTimeConfig()}
               </>
             )}
           </>
