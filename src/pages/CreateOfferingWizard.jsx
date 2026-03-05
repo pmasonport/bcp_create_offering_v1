@@ -1036,9 +1036,9 @@ export default function CreateOfferingWizard({ isAddon = false }) {
         >
           {state.isPaid === true && (
             <>
-              <div className="border-t border-g-200 my-6" />
+              <div className="border-t border-g-200 my-5" />
 
-            <div className="mb-6">
+            <div className="mb-5">
               <label className="block text-sm font-medium text-g-700 mb-2">
                 Monetization strategy <span className="text-red">*</span>
               </label>
@@ -1098,9 +1098,9 @@ export default function CreateOfferingWizard({ isAddon = false }) {
             >
               {state.monetizationStrategy && (
                 <>
-                  <div className="border-t border-g-200 my-6" />
+                  <div className="border-t border-g-200 my-5" />
 
-                  <div className="mb-6">
+                  <div className="mb-5">
                     {/* For Subscription: Pricing model first */}
                     {state.monetizationStrategy === 'subscription' && (
                       <>
@@ -1171,7 +1171,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                             {state.selectedFeature && (
                               <>
                                 <label className="block text-sm font-medium text-g-700 mb-2">Billing cycles</label>
-                                <div className="space-y-2 mb-4">
+                                <div className="space-y-2 mb-3">
                                   {[
                                     { value: 'monthly', label: 'Monthly' },
                                     { value: 'annual', label: 'Annual' },
@@ -1217,37 +1217,41 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                                   return (
                                     <>
                                       {(editingCard.billingPeriod === 'monthly' || editingCard.billingPeriod === 'both') && (
-                                        <div className="mb-4">
+                                        <div className="mb-3">
                                           <label className="block text-sm font-medium text-g-700 mb-1.5">Price per {featureName} per month</label>
                                           <div className="flex items-center gap-2">
                                             <span className="text-sm text-g-500">$</span>
-                                            <input
-                                              type="number"
-                                              step="0.01"
-                                              value={editingCard.monthlyPrice}
-                                              onChange={(e) => setEditingCard({ ...editingCard, monthlyPrice: e.target.value })}
-                                              placeholder="0.00"
-                                              className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
-                                            />
-                                            <span className="text-sm text-g-400">/ {featureName} / month</span>
+                                            <div className="flex-1 relative">
+                                              <input
+                                                type="number"
+                                                step="0.01"
+                                                value={editingCard.monthlyPrice}
+                                                onChange={(e) => setEditingCard({ ...editingCard, monthlyPrice: e.target.value })}
+                                                placeholder="0.00"
+                                                className="w-full px-3.5 py-2.5 pr-32 border border-g-200 rounded text-sm"
+                                              />
+                                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-g-400 pointer-events-none">/ {featureName} / month</span>
+                                            </div>
                                           </div>
                                         </div>
                                       )}
 
                                       {(editingCard.billingPeriod === 'annual' || editingCard.billingPeriod === 'both') && (
-                                        <div className="mb-4">
+                                        <div className="mb-3">
                                           <label className="block text-sm font-medium text-g-700 mb-1.5">Price per {featureName} per year</label>
                                           <div className="flex items-center gap-2">
                                             <span className="text-sm text-g-500">$</span>
-                                            <input
-                                              type="number"
-                                              step="0.01"
-                                              value={editingCard.annualPrice}
-                                              onChange={(e) => setEditingCard({ ...editingCard, annualPrice: e.target.value })}
-                                              placeholder="0.00"
-                                              className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
-                                            />
-                                            <span className="text-sm text-g-400">/ {featureName} / year</span>
+                                            <div className="flex-1 relative">
+                                              <input
+                                                type="number"
+                                                step="0.01"
+                                                value={editingCard.annualPrice}
+                                                onChange={(e) => setEditingCard({ ...editingCard, annualPrice: e.target.value })}
+                                                placeholder="0.00"
+                                                className="w-full px-3.5 py-2.5 pr-32 border border-g-200 rounded text-sm"
+                                              />
+                                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-g-400 pointer-events-none">/ {featureName} / year</span>
+                                            </div>
                                           </div>
                                         </div>
                                       )}
@@ -1291,7 +1295,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                         {state.pricingModel === 'fixed' && (
                           <>
                             <label className="block text-sm font-medium text-g-700 mb-2">Billing cycles</label>
-                            <div className="space-y-2 mb-4">
+                            <div className="space-y-2 mb-3">
                               {[
                                 { value: 'monthly', label: 'Monthly' },
                                 { value: 'annual', label: 'Annual' },
@@ -1326,37 +1330,41 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                             </div>
 
                             {(editingCard.billingPeriod === 'monthly' || editingCard.billingPeriod === 'both') && (
-                              <div className="mb-4">
+                              <div className="mb-3">
                                 <label className="block text-sm font-medium text-g-700 mb-1.5">Monthly price</label>
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-g-500">$</span>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    value={editingCard.monthlyPrice}
-                                    onChange={(e) => setEditingCard({ ...editingCard, monthlyPrice: e.target.value })}
-                                    placeholder="0.00"
-                                    className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
-                                  />
-                                  <span className="text-sm text-g-400">/ month</span>
+                                  <div className="flex-1 relative">
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={editingCard.monthlyPrice}
+                                      onChange={(e) => setEditingCard({ ...editingCard, monthlyPrice: e.target.value })}
+                                      placeholder="0.00"
+                                      className="w-full px-3.5 py-2.5 pr-20 border border-g-200 rounded text-sm"
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-g-400 pointer-events-none">/ month</span>
+                                  </div>
                                 </div>
                               </div>
                             )}
 
                             {(editingCard.billingPeriod === 'annual' || editingCard.billingPeriod === 'both') && (
-                              <div className="mb-4">
+                              <div className="mb-3">
                                 <label className="block text-sm font-medium text-g-700 mb-1.5">Annual price</label>
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-g-500">$</span>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    value={editingCard.annualPrice}
-                                    onChange={(e) => setEditingCard({ ...editingCard, annualPrice: e.target.value })}
-                                    placeholder="0.00"
-                                    className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
-                                  />
-                                  <span className="text-sm text-g-400">/ year</span>
+                                  <div className="flex-1 relative">
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={editingCard.annualPrice}
+                                      onChange={(e) => setEditingCard({ ...editingCard, annualPrice: e.target.value })}
+                                      placeholder="0.00"
+                                      className="w-full px-3.5 py-2.5 pr-16 border border-g-200 rounded text-sm"
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-g-400 pointer-events-none">/ year</span>
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -1484,8 +1492,8 @@ export default function CreateOfferingWizard({ isAddon = false }) {
             {/* Rate Cards Display - only for PAYG, Prepaid, One-time */}
             {state.monetizationStrategy && state.monetizationStrategy !== 'subscription' && state.rateCards.length > 0 && (
               <>
-                <div className="border-t border-g-200 my-6" />
-                <div className="mb-6">
+                <div className="border-t border-g-200 my-5" />
+                <div className="mb-5">
                   <label className="block text-sm font-medium text-g-700 mb-3">
                     {state.monetizationStrategy === 'payg' ? 'Rate Cards' : 'Pricing'}
                   </label>
@@ -1538,19 +1546,19 @@ export default function CreateOfferingWizard({ isAddon = false }) {
             {/* Configuration Forms for non-subscription strategies */}
             {state.monetizationStrategy === 'payg' && (
               <>
-                <div className="border-t border-g-200 my-6" />
+                <div className="border-t border-g-200 my-5" />
                 {renderPaygConfig()}
               </>
             )}
             {state.monetizationStrategy === 'prepaid' && (
               <>
-                <div className="border-t border-g-200 my-6" />
+                <div className="border-t border-g-200 my-5" />
                 {renderPrepaidConfig()}
               </>
             )}
             {state.monetizationStrategy === 'one-time' && (
               <>
-                <div className="border-t border-g-200 my-6" />
+                <div className="border-t border-g-200 my-5" />
                 {renderOneTimeConfig()}
               </>
             )}
