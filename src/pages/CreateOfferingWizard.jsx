@@ -960,6 +960,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
 
       {editingCard.billingTiming && (
         <>
+          <div className="border-t border-g-200 my-5" />
           <label className="block text-sm font-medium text-g-700 mb-1.5">Price</label>
           <div className="flex items-center gap-2">
             <span className="text-sm text-g-500">$</span>
@@ -1009,6 +1010,14 @@ export default function CreateOfferingWizard({ isAddon = false }) {
         }
       }
 
+      // For one-time, use editingCard
+      if (state.isPaid === true && state.monetizationStrategy === 'one-time') {
+        if (editingCard.monthlyPrice && editingCard.billingTiming) {
+          const timing = editingCard.billingTiming === 'advance' ? 'in-advance' : 'in-arrears'
+          return `Customers pay $${editingCard.monthlyPrice} once (${timing}).`
+        }
+      }
+
       // For other strategies, use rate cards
       if (state.isPaid === true && state.rateCards.length > 0) {
         if (state.monetizationStrategy === 'payg') {
@@ -1017,9 +1026,6 @@ export default function CreateOfferingWizard({ isAddon = false }) {
         } else if (state.monetizationStrategy === 'prepaid') {
           const card = state.rateCards[0]
           return `Customers purchase credits in blocks of ${card.blockSize} for $${card.blockPrice}.`
-        } else if (state.monetizationStrategy === 'one-time') {
-          const card = state.rateCards[0]
-          return `Customers pay $${card.monthlyPrice} once.`
         }
       }
 
