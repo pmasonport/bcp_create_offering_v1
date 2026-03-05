@@ -1508,6 +1508,8 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                       key={value}
                       onClick={() => {
                         dispatch({ type: 'SET_FIELD', field: 'monetizationStrategy', value })
+                        // Clear rate cards when switching strategies
+                        dispatch({ type: 'SET_RATE_CARDS', cards: [] })
                         // Set default billing timing and pricing model based on strategy
                         const defaults = {
                           ...(billingTiming && { billingTiming }),
@@ -2017,13 +2019,13 @@ export default function CreateOfferingWizard({ isAddon = false }) {
               )}
             </div>
 
-            {/* Rate Cards Display - only for PAYG, Prepaid */}
-            {state.monetizationStrategy && state.monetizationStrategy !== 'subscription' && state.monetizationStrategy !== 'one-time' && state.rateCards.length > 0 && (
+            {/* Rate Cards Display - only for Prepaid (PAYG has its own in renderPaygConfig) */}
+            {state.monetizationStrategy === 'prepaid' && state.rateCards.length > 0 && (
               <>
                 <div className="border-t border-g-200 my-5" />
                 <div className="mb-5">
                   <label className="block text-sm font-medium text-g-700 mb-3">
-                    {state.monetizationStrategy === 'payg' ? 'Rate Cards' : 'Pricing'}
+                    Pricing
                   </label>
                   {state.rateCards.map((card, index) => (
                     <div key={index} className="flex items-center justify-between p-4 border border-g-200 rounded mb-2 bg-white hover:border-g-300 transition-all">
