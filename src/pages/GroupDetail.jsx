@@ -131,15 +131,15 @@ export default function GroupDetail() {
         <div className="flex gap-2">
           <Link
             to={`/create/offering?group=${groupId}`}
-            className="px-[22px] py-[11px] bg-blue text-white rounded text-sm font-medium hover:opacity-90 transition-opacity"
+            className="px-4 py-2 bg-blue text-white rounded text-sm font-medium hover:bg-blue/90 transition-all shadow-sm hover:shadow"
           >
-            + Add offering
+            Add offering
           </Link>
           <Link
             to={`/create/addon?group=${groupId}`}
-            className="px-[22px] py-[11px] bg-white border border-g-200 text-g-700 rounded text-sm font-medium hover:bg-g-50 transition-colors"
+            className="px-4 py-2 bg-white border border-g-200 text-g-700 rounded text-sm font-medium hover:bg-g-50 hover:border-g-300 transition-all"
           >
-            + Add add-on
+            Add add-on
           </Link>
         </div>
       </div>
@@ -191,15 +191,15 @@ export default function GroupDetail() {
           <div className="flex gap-2 justify-center">
             <Link
               to={`/create/offering?group=${groupId}`}
-              className="px-[22px] py-[11px] bg-blue text-white rounded text-sm font-medium hover:opacity-90 transition-opacity"
+              className="px-4 py-2 bg-blue text-white rounded text-sm font-medium hover:bg-blue/90 transition-all shadow-sm hover:shadow"
             >
-              + Add offering
+              Add offering
             </Link>
             <Link
               to={`/create/addon?group=${groupId}`}
-              className="px-[22px] py-[11px] bg-white border border-g-200 text-g-700 rounded text-sm font-medium hover:bg-g-50 transition-colors"
+              className="px-4 py-2 bg-white border border-g-200 text-g-700 rounded text-sm font-medium hover:bg-g-50 hover:border-g-300 transition-all"
             >
-              + Add add-on
+              Add add-on
             </Link>
           </div>
         </div>

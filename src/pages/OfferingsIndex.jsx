@@ -1,18 +1,30 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { GROUPS } from '../data/groups'
 import { countOfferings, countAddons } from '../data/helpers'
 import GraphView from '../components/GraphView'
+import Drawer from '../components/Drawer'
+import CreateGroupDrawer from '../components/CreateGroupDrawer'
 
 export default function OfferingsIndex() {
+  const navigate = useNavigate()
   const [viewMode, setViewMode] = useState('list') // 'list' or 'graph'
   const [showCreateMenu, setShowCreateMenu] = useState(false)
   const [catalogView, setCatalogView] = useState('minimal') // 'minimal' or 'full'
+  const [showCreateGroupDrawer, setShowCreateGroupDrawer] = useState(false)
 
   // Filter groups based on catalog view
   const visibleGroups = catalogView === 'minimal'
     ? GROUPS.filter(g => ['dsop', 'premium-support', 'dhi', 'sandboxes'].includes(g.id))
     : GROUPS
+
+  // Handle group creation
+  const handleGroupCreate = (newGroup) => {
+    // In real app: API call would happen in CreateGroupDrawer
+    // This just closes drawer and navigates
+    setShowCreateGroupDrawer(false)
+    navigate(`/offerings/group/${newGroup.id}`)
+  }
 
   return (
     <div>
@@ -27,10 +39,10 @@ export default function OfferingsIndex() {
         <div className="relative">
           <button
             onClick={() => setShowCreateMenu(!showCreateMenu)}
-            className="flex items-center gap-1.5 px-[22px] py-[11px] bg-blue text-white rounded text-sm font-medium hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2 px-4 py-2 bg-blue text-white rounded text-sm font-medium hover:bg-blue/90 transition-all shadow-sm hover:shadow"
           >
-            <span>+ Create</span>
-            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <span>Create</span>
+            <svg width="8" height="5" viewBox="0 0 10 6" fill="currentColor" className="opacity-70">
               <path d="M1 1L5 5L9 1" />
             </svg>
           </button>
@@ -39,26 +51,28 @@ export default function OfferingsIndex() {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowCreateMenu(false)} />
               <div className="absolute right-0 mt-1 w-56 bg-white border border-g-200 rounded shadow-lg z-20">
-                <Link
-                  to="/create/group"
-                  className="block px-4 py-2.5 text-sm text-g-700 hover:bg-g-50 transition-colors"
-                  onClick={() => setShowCreateMenu(false)}
+                <button
+                  onClick={() => {
+                    setShowCreateGroupDrawer(true)
+                    setShowCreateMenu(false)
+                  }}
+                  className="block w-full text-left px-4 py-2.5 text-sm text-g-700 hover:bg-g-50 transition-colors"
                 >
-                  New offering group
-                </Link>
+                  Offering group
+                </button>
                 <Link
                   to="/create/offering"
                   className="block px-4 py-2.5 text-sm text-g-700 hover:bg-g-50 transition-colors"
                   onClick={() => setShowCreateMenu(false)}
                 >
-                  New offering
+                  Offering
                 </Link>
                 <Link
                   to="/create/addon"
                   className="block px-4 py-2.5 text-sm text-g-700 hover:bg-g-50 transition-colors"
                   onClick={() => setShowCreateMenu(false)}
                 >
-                  New add-on
+                  Add-on
                 </Link>
               </div>
             </>
@@ -176,6 +190,19 @@ export default function OfferingsIndex() {
           )}
         </svg>
       </button>
+
+      {/* Create Group Drawer */}
+      {showCreateGroupDrawer && (
+        <Drawer
+          content={
+            <CreateGroupDrawer
+              onClose={() => setShowCreateGroupDrawer(false)}
+              onCreate={handleGroupCreate}
+            />
+          }
+          onClose={() => setShowCreateGroupDrawer(false)}
+        />
+      )}
     </div>
   )
 }
