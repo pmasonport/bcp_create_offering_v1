@@ -1041,7 +1041,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                 {[
                   { value: 'subscription', label: 'Subscription', desc: 'Recurring charge (monthly or annual). Example: $20/user/month', billingTiming: 'advance', pricingModel: '' },
                   { value: 'payg', label: 'Pay-as-you-go', desc: 'Charged based on usage at end of period. Example: $0.05 per build minute', billingTiming: 'arrears', pricingModel: '' },
-                  { value: 'prepaid', label: 'Pre-paid', desc: 'Customer buys blocks upfront and draws down. Example: 500 minutes for $25', billingTiming: 'immediate', pricingModel: 'block' },
+                  { value: 'prepaid', label: 'Pre-paid with top-ups', desc: 'Customer buys blocks upfront and draws down. Example: 500 minutes for $25', billingTiming: 'immediate', pricingModel: 'block' },
                   { value: 'one-time', label: 'One-time', desc: 'Single payment with no recurrence. Example: $500 setup fee', billingTiming: 'immediate', pricingModel: 'fixed' }
                 ].map(({ value, label, desc, billingTiming, pricingModel }) => {
                   const isSelected = state.monetizationStrategy === value
