@@ -29,6 +29,10 @@ const initialState = {
   // Step 2: Pricing
   isPaid: null, // null, true, false
   monetizationStrategy: '', // 'subscription', 'payg', 'prepaid', 'one-time'
+  pricingModel: '', // 'fixed', 'per-unit' - set before feature selection for subscription
+  selectedFeature: '', // For subscription/prepaid/one-time
+  selectedMeter: '', // For PAYG
+  selectedResource: '', // For metered features/meters
   rateCards: [],
 
   // Step 3: Entitlements
@@ -177,8 +181,14 @@ export default function CreateOfferingWizard({ isAddon = false }) {
 
   // Step 2 validation
   const canProceedStep2 = () => {
+    // Must select free or paid
     if (state.isPaid === null) return false
-    if (!state.isPaid) return true // Free offerings skip pricing config
+
+    // Free offerings only need the free rate card (auto-added)
+    if (state.isPaid === false) return state.rateCards.length > 0
+
+    // Paid offerings need a strategy and at least one rate card
+    if (!state.monetizationStrategy) return false
     return state.rateCards.length > 0
   }
 
@@ -725,53 +735,10 @@ export default function CreateOfferingWizard({ isAddon = false }) {
 
   // Render Step 2: Pricing (split into multiple functions due to size)
   const renderSubscriptionConfig = () => (
-    <div className="mb-6 p-4 border border-g-200 rounded bg-g-50">
-      <h4 className="text-sm font-semibold text-g-900 mb-4">Subscription Configuration</h4>
-
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-g-700 mb-1.5">
-          What is being charged for?
-        </label>
-        <select
-          value={editingCard.feature}
-          onChange={(e) => setEditingCard({ ...editingCard, feature: e.target.value })}
-          className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm bg-white"
-        >
-          <option value="">Select a feature...</option>
-          <optgroup label="General">
-            <option value="general_seats">Seats (General)</option>
-          </optgroup>
-          <optgroup label="Docker Build">
-            <option value="build_minutes">Build Minutes (Docker Build)</option>
-          </optgroup>
-        </select>
-      </div>
-
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-g-700 mb-3">Pricing model</label>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setEditingCard({ ...editingCard, pricingModel: 'fixed' })}
-            className={`flex-1 px-3 py-2 border rounded text-sm font-medium transition-all ${
-              editingCard.pricingModel === 'fixed'
-                ? 'border-blue bg-blue-light text-blue'
-                : 'border-g-200 bg-white text-g-600 hover:bg-g-50'
-            }`}
-          >
-            Fixed amount
-          </button>
-          <button
-            onClick={() => setEditingCard({ ...editingCard, pricingModel: 'per-unit' })}
-            className={`flex-1 px-3 py-2 border rounded text-sm font-medium transition-all ${
-              editingCard.pricingModel === 'per-unit'
-                ? 'border-blue bg-blue-light text-blue'
-                : 'border-g-200 bg-white text-g-600 hover:bg-g-50'
-            }`}
-          >
-            Per unit
-          </button>
-        </div>
-      </div>
+    <div className="mb-6 p-5 border border-g-200 rounded bg-white">
+      <h4 className="text-sm font-semibold text-g-900 mb-4">
+        {state.pricingModel === 'fixed' ? 'Set Subscription Price' : 'Set Per-Unit Price'}
+      </h4>
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-g-700 mb-3">Billing period</label>
@@ -831,141 +798,107 @@ export default function CreateOfferingWizard({ isAddon = false }) {
         disabled={!editingCard.pricingModel || !editingCard.billingPeriod || (!editingCard.monthlyPrice && !editingCard.annualPrice)}
         className="w-full px-4 py-2.5 bg-blue text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-35"
       >
-        Add Rate Card
+        Set pricing
       </button>
     </div>
   )
 
   const renderPaygConfig = () => (
-    <div className="mb-6 p-4 border border-g-200 rounded bg-g-50">
-      <h4 className="text-sm font-semibold text-g-900 mb-4">Pay-As-You-Go Configuration</h4>
+    <div className="mb-6 p-5 border border-g-200 rounded bg-white">
+      <h4 className="text-sm font-semibold text-g-900 mb-4">Configure Usage-Based Pricing</h4>
+      <p className="text-xs text-g-500 mb-4">
+        Add a rate card for each metered resource you want to charge for. Most add-ons have 1-3 rate cards.
+      </p>
 
       <div className="mb-4">
-        <label className="block text-sm font-medium text-g-700 mb-1.5">Which meter?</label>
-        <select
-          value={editingCard.meter}
-          onChange={(e) => setEditingCard({ ...editingCard, meter: e.target.value, resource: '' })}
-          className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm bg-white"
-        >
-          <option value="">Select a meter...</option>
-          {METERS.map(meter => (
-            <option key={meter.id} value={meter.id}>
-              {meter.name} ({meter.unit})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {editingCard.meter && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-g-700 mb-1.5">Which resource?</label>
-          <select
-            value={editingCard.resource}
-            onChange={(e) => setEditingCard({ ...editingCard, resource: e.target.value })}
-            className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm bg-white"
-          >
-            <option value="">Select a resource...</option>
-            {METERED_RESOURCES.filter(r => r.meters.includes(editingCard.meter)).map(resource => (
-              <option key={resource.id} value={resource.id}>
-                {resource.name} — {resource.desc}
-              </option>
+        <label className="block text-sm font-medium text-g-700 mb-3">Pricing model</label>
+        <p className="text-xs text-g-500 mb-3">How should usage be charged?</p>
+        <div className="grid grid-cols-4 gap-2">
+            {['per-unit', 'block', 'graduated', 'volume'].map(model => (
+              <button
+                key={model}
+                onClick={() => setEditingCard({ ...editingCard, pricingModel: model })}
+                className={`p-3 border rounded text-xs font-medium transition-all ${
+                  editingCard.pricingModel === model
+                    ? 'border-blue bg-blue-light text-blue'
+                    : 'border-g-200 bg-white text-g-600 hover:bg-g-50'
+                }`}
+              >
+                <div className="mb-1 text-base">{model === 'per-unit' && '▌▌▌▌'}{model === 'block' && '▌▌ ▌▌'}{model === 'graduated' && '▌ ▌ ▌'}{model === 'volume' && '▌▌ ▌▌'}</div>
+                <div>{model.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</div>
+              </button>
             ))}
-          </select>
+          </div>
+        </div>
+
+      {editingCard.pricingModel === 'per-unit' && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-g-700 mb-1.5">Price per unit</label>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-g-500">$</span>
+            <input
+              type="number"
+              step="0.001"
+              value={editingCard.perUnitPrice}
+              onChange={(e) => setEditingCard({ ...editingCard, perUnitPrice: e.target.value })}
+              placeholder="0.00"
+              className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
+            />
+          </div>
         </div>
       )}
 
-      {editingCard.resource && (
+      {editingCard.pricingModel === 'block' && (
         <>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-g-700 mb-3">Pricing model</label>
-            <div className="grid grid-cols-4 gap-2">
-              {['per-unit', 'block', 'graduated', 'volume'].map(model => (
-                <button
-                  key={model}
-                  onClick={() => setEditingCard({ ...editingCard, pricingModel: model })}
-                  className={`p-3 border rounded text-xs font-medium transition-all ${
-                    editingCard.pricingModel === model
-                      ? 'border-blue bg-blue-light text-blue'
-                      : 'border-g-200 bg-white text-g-600 hover:bg-g-50'
-                  }`}
-                >
-                  <div className="mb-1 text-base">{model === 'per-unit' && '▌▌▌▌'}{model === 'block' && '▌▌ ▌▌'}{model === 'graduated' && '▌ ▌ ▌'}{model === 'volume' && '▌▌ ▌▌'}</div>
-                  <div>{model.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</div>
-                </button>
-              ))}
-            </div>
+            <label className="block text-sm font-medium text-g-700 mb-1.5">Block size</label>
+            <input
+              type="number"
+              value={editingCard.blockSize}
+              onChange={(e) => setEditingCard({ ...editingCard, blockSize: e.target.value })}
+              placeholder="500"
+              className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm"
+            />
           </div>
-
-          {editingCard.pricingModel === 'per-unit' && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-g-700 mb-1.5">Price per unit</label>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-g-500">$</span>
-                <input
-                  type="number"
-                  step="0.001"
-                  value={editingCard.perUnitPrice}
-                  onChange={(e) => setEditingCard({ ...editingCard, perUnitPrice: e.target.value })}
-                  placeholder="0.00"
-                  className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
-                />
-              </div>
-            </div>
-          )}
-
-          {editingCard.pricingModel === 'block' && (
-            <>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-g-700 mb-1.5">Block size</label>
-                <input
-                  type="number"
-                  value={editingCard.blockSize}
-                  onChange={(e) => setEditingCard({ ...editingCard, blockSize: e.target.value })}
-                  placeholder="500"
-                  className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-g-700 mb-1.5">Price per block</label>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-g-500">$</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={editingCard.blockPrice}
-                    onChange={(e) => setEditingCard({ ...editingCard, blockPrice: e.target.value })}
-                    placeholder="25.00"
-                    className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
-          {(editingCard.pricingModel === 'graduated' || editingCard.pricingModel === 'volume') && (
-            <div className="mb-4">
-              <TierBuilder
-                tiers={editingCard.tiers}
-                onChange={(tiers) => setEditingCard({ ...editingCard, tiers })}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-g-700 mb-1.5">Price per block</label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-g-500">$</span>
+              <input
+                type="number"
+                step="0.01"
+                value={editingCard.blockPrice}
+                onChange={(e) => setEditingCard({ ...editingCard, blockPrice: e.target.value })}
+                placeholder="25.00"
+                className="flex-1 px-3.5 py-2.5 border border-g-200 rounded text-sm"
               />
             </div>
-          )}
-
-          <button
-            onClick={addRateCard}
-            disabled={!editingCard.pricingModel}
-            className="w-full px-4 py-2.5 bg-blue text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-35"
-          >
-            Add Rate Card
-          </button>
+          </div>
         </>
       )}
+
+      {(editingCard.pricingModel === 'graduated' || editingCard.pricingModel === 'volume') && (
+        <div className="mb-4">
+          <TierBuilder
+            tiers={editingCard.tiers}
+            onChange={(tiers) => setEditingCard({ ...editingCard, tiers })}
+          />
+        </div>
+      )}
+
+      <button
+        onClick={addRateCard}
+        disabled={!editingCard.pricingModel}
+        className="w-full px-4 py-2.5 bg-blue text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-35"
+      >
+        Add rate card
+      </button>
     </div>
   )
 
   const renderPrepaidConfig = () => (
-    <div className="mb-6 p-4 border border-g-200 rounded bg-g-50">
-      <h4 className="text-sm font-semibold text-g-900 mb-4">Prepaid Configuration</h4>
+    <div className="mb-6 p-5 border border-g-200 rounded bg-white">
+      <h4 className="text-sm font-semibold text-g-900 mb-4">Configure Prepaid Pricing</h4>
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-g-700 mb-1.5">What is being sold?</label>
@@ -1012,14 +945,14 @@ export default function CreateOfferingWizard({ isAddon = false }) {
         disabled={!editingCard.feature || !editingCard.blockSize || !editingCard.blockPrice}
         className="w-full px-4 py-2.5 bg-blue text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-35"
       >
-        Add Rate Card
+        Add prepaid option
       </button>
     </div>
   )
 
   const renderOneTimeConfig = () => (
-    <div className="mb-6 p-4 border border-g-200 rounded bg-g-50">
-      <h4 className="text-sm font-semibold text-g-900 mb-4">One-Time Payment Configuration</h4>
+    <div className="mb-6 p-5 border border-g-200 rounded bg-white">
+      <h4 className="text-sm font-semibold text-g-900 mb-4">Configure One-Time Payment</h4>
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-g-700 mb-1.5">Price</label>
@@ -1041,121 +974,438 @@ export default function CreateOfferingWizard({ isAddon = false }) {
         disabled={!editingCard.monthlyPrice}
         className="w-full px-4 py-2.5 bg-blue text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-35"
       >
-        Add Rate Card
+        Set price
       </button>
     </div>
   )
 
-  const renderStep2 = () => (
-    <div className="border border-g-200 rounded-md p-6 bg-white">
-      <h3 className="text-base font-semibold text-g-900 mb-5">Pricing Configuration</h3>
+  const renderStep2 = () => {
+    // Generate pricing summary
+    const getPricingSummary = () => {
+      if (state.isPaid === false) {
+        return `Customers don't have to pay for this ${isAddon ? 'add-on' : 'offering'}.`
+      }
 
-      {state.isPaid === null && (
+      if (state.isPaid === true && state.rateCards.length > 0) {
+        if (state.monetizationStrategy === 'subscription') {
+          const card = state.rateCards[0]
+          if (card.billingPeriod === 'both') {
+            return `Customers pay $${card.monthlyPrice}/month or $${card.annualPrice}/year.`
+          } else if (card.billingPeriod === 'monthly') {
+            return `Customers pay $${card.monthlyPrice}/month.`
+          } else if (card.billingPeriod === 'annual') {
+            return `Customers pay $${card.annualPrice}/year.`
+          }
+        } else if (state.monetizationStrategy === 'payg') {
+          const count = state.rateCards.length
+          return `Customers pay based on usage${count > 1 ? ` across ${count} metered resources` : ''}.`
+        } else if (state.monetizationStrategy === 'prepaid') {
+          const card = state.rateCards[0]
+          return `Customers purchase credits in blocks of ${card.blockSize} for $${card.blockPrice}.`
+        } else if (state.monetizationStrategy === 'one-time') {
+          const card = state.rateCards[0]
+          return `Customers pay $${card.monthlyPrice} once.`
+        }
+      }
+
+      return null
+    }
+
+    const pricingSummary = getPricingSummary()
+
+    return (
+      <div className="border border-g-200 rounded-md p-6 bg-white">
+        <h3 className="text-base font-semibold text-g-900 mb-5">Pricing Configuration</h3>
+
+        {/* Free/Paid Selection - Always Visible */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-g-700 mb-3">
-            Is this offering free or paid? <span className="text-red">*</span>
+            Is this {isAddon ? 'add-on' : 'offering'} free or paid? <span className="text-red">*</span>
           </label>
           <div className="grid grid-cols-2 gap-2.5">
             <SelectCard
               title="Free"
-              description="No charge to customers"
               selected={state.isPaid === false}
               onClick={() => {
                 dispatch({ type: 'SET_FIELD', field: 'isPaid', value: false })
-                dispatch({
-                  type: 'ADD_RATE_CARD',
-                  card: { pricingModel: 'fixed', price: 0, billingTiming: 'advance', billingCycle: 'monthly' }
-                })
+                // Only add free rate card if none exist
+                if (state.rateCards.length === 0) {
+                  dispatch({
+                    type: 'ADD_RATE_CARD',
+                    card: { pricingModel: 'fixed', price: 0, billingTiming: 'advance', billingCycle: 'monthly' }
+                  })
+                }
               }}
             />
             <SelectCard
               title="Paid"
-              description="Customers pay for this offering"
               selected={state.isPaid === true}
               onClick={() => dispatch({ type: 'SET_FIELD', field: 'isPaid', value: true })}
             />
           </div>
         </div>
-      )}
 
-      {state.isPaid === true && !state.monetizationStrategy && (
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-g-700 mb-3">
-            How will customers pay? <span className="text-red">*</span>
-          </label>
-          <div className="space-y-1.5">
-            {[
-              { value: 'subscription', label: 'Recurring subscription', desc: 'Charged on a recurring basis (monthly, annual, or both)' },
-              { value: 'payg', label: 'Pay-as-you-go', desc: 'Charged based on actual usage at end of billing period' },
-              { value: 'prepaid', label: 'Prepaid top-ups', desc: 'Customer purchases credits/blocks upfront, draws down over time' },
-              { value: 'one-time', label: 'One-time payment', desc: 'Single charge, no recurrence' }
-            ].map(({ value, label, desc }) => (
-              <label
-                key={value}
-                onClick={() => dispatch({ type: 'SET_FIELD', field: 'monetizationStrategy', value })}
-                className="flex items-start gap-3 p-3 border border-g-200 rounded cursor-pointer hover:border-g-300 transition-all"
-              >
-                <div className="w-4 h-4 border-2 border-g-300 rounded-full mt-0.5 flex-shrink-0" />
-                <div>
-                  <div className="text-[13px] font-medium text-g-900">{label}</div>
-                  <div className="text-xs text-g-500 mt-0.5">{desc}</div>
-                </div>
+        {/* Strategy Selection - Only show when Paid */}
+        <div
+          className="overflow-hidden transition-all duration-300 ease-in-out"
+          style={{
+            maxHeight: state.isPaid === true ? '1500px' : '0',
+            opacity: state.isPaid === true ? 1 : 0
+          }}
+        >
+          {state.isPaid === true && (
+            <>
+              <div className="border-t border-g-200 my-6" />
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-g-700 mb-2">
+                Monetization strategy <span className="text-red">*</span>
               </label>
-            ))}
+              <p className="text-xs text-g-500 mb-3">
+                Choose how customers will be charged for this {isAddon ? 'add-on' : 'offering'}
+              </p>
+              <div className="space-y-1.5">
+                {[
+                  { value: 'subscription', label: 'Subscription', desc: 'Recurring charge (monthly or annual). Example: $20/user/month' },
+                  { value: 'payg', label: 'Pay-as-you-go', desc: 'Charged based on usage at end of period. Example: $0.05 per build minute' },
+                  { value: 'prepaid', label: 'Pre-paid', desc: 'Customer buys blocks upfront and draws down. Example: 500 minutes for $25' },
+                  { value: 'one-time', label: 'One-time', desc: 'Single payment with no recurrence. Example: $500 setup fee' }
+                ].map(({ value, label, desc }) => {
+                  const isSelected = state.monetizationStrategy === value
+                  return (
+                    <label
+                      key={value}
+                      onClick={() => dispatch({ type: 'SET_FIELD', field: 'monetizationStrategy', value })}
+                      className={`flex items-start gap-3 p-3 border rounded cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-blue bg-blue-light/20'
+                          : 'border-g-200 hover:border-g-300'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 border-2 rounded-full mt-0.5 flex-shrink-0 flex items-center justify-center ${
+                        isSelected ? 'border-blue' : 'border-g-300'
+                      }`}>
+                        {isSelected && (
+                          <div className="w-2 h-2 bg-blue rounded-full" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-[13px] font-medium text-g-900">{label}</div>
+                        <div className="text-xs text-g-500 mt-0.5">{desc}</div>
+                      </div>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* What is being charged for? - Critical question after strategy */}
+            <div
+              className="overflow-hidden transition-all duration-300 ease-in-out"
+              style={{
+                maxHeight: state.monetizationStrategy ? '400px' : '0',
+                opacity: state.monetizationStrategy ? 1 : 0
+              }}
+            >
+              {state.monetizationStrategy && (
+                <>
+                  <div className="border-t border-g-200 my-6" />
+
+                  <div className="mb-6">
+                    {/* For Subscription: Pricing model first */}
+                    {state.monetizationStrategy === 'subscription' && (
+                      <>
+                        <label className="block text-sm font-medium text-g-700 mb-3">
+                          Pricing model <span className="text-red">*</span>
+                        </label>
+                        <p className="text-xs text-g-500 mb-3">Choose the pricing structure</p>
+                        <div className="grid grid-cols-2 gap-2.5 mb-4">
+                          <button
+                            onClick={() => {
+                              dispatch({ type: 'SET_FIELD', field: 'pricingModel', value: 'fixed' })
+                              dispatch({ type: 'SET_FIELD', field: 'selectedFeature', value: '' })
+                            }}
+                            className={`p-4 border rounded text-left transition-all ${
+                              state.pricingModel === 'fixed'
+                                ? 'border-blue bg-blue-light/20'
+                                : 'border-g-200 hover:border-g-300'
+                            }`}
+                          >
+                            <div className="font-medium text-sm text-g-900 mb-1">Flat fee</div>
+                            <div className="text-xs text-g-500">Fixed amount regardless of usage</div>
+                          </button>
+                          <button
+                            onClick={() => dispatch({ type: 'SET_FIELD', field: 'pricingModel', value: 'per-unit' })}
+                            className={`p-4 border rounded text-left transition-all ${
+                              state.pricingModel === 'per-unit'
+                                ? 'border-blue bg-blue-light/20'
+                                : 'border-g-200 hover:border-g-300'
+                            }`}
+                          >
+                            <div className="font-medium text-sm text-g-900 mb-1">Per unit</div>
+                            <div className="text-xs text-g-500">Price scales with quantity</div>
+                          </button>
+                        </div>
+
+                        {/* Feature picker - only for per-unit */}
+                        {state.pricingModel === 'per-unit' && (
+                          <>
+                            <label className="block text-sm font-medium text-g-700 mb-1.5">
+                              What is being charged for? <span className="text-red">*</span>
+                            </label>
+                            <select
+                              value={state.selectedFeature}
+                              onChange={(e) => {
+                                dispatch({ type: 'SET_FIELD', field: 'selectedFeature', value: e.target.value })
+                                dispatch({ type: 'SET_FIELD', field: 'selectedResource', value: '' })
+                              }}
+                              className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm bg-white"
+                            >
+                              <option value="">Select a feature...</option>
+                              {SERVICES.map(service => {
+                                const mutableFeatures = (SERVICE_FEATURES[service.id] || []).filter(f => f.mutable)
+                                if (mutableFeatures.length === 0) return null
+                                return (
+                                  <optgroup key={service.id} label={service.name}>
+                                    {mutableFeatures.map(feature => (
+                                      <option key={`${service.id}_${feature.slug}`} value={`${service.id}_${feature.slug}`}>
+                                        {feature.name} ({service.name})
+                                      </option>
+                                    ))}
+                                  </optgroup>
+                                )
+                              })}
+                            </select>
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {/* For Prepaid, One-time: Feature picker */}
+                    {(state.monetizationStrategy === 'prepaid' ||
+                      state.monetizationStrategy === 'one-time') && (
+                      <>
+                        <label className="block text-sm font-medium text-g-700 mb-1.5">
+                          {state.monetizationStrategy === 'prepaid' && 'What is being sold?'}
+                          {state.monetizationStrategy === 'one-time' && 'What is being charged for? (optional)'}
+                        </label>
+                        <select
+                          value={state.selectedFeature}
+                          onChange={(e) => {
+                            dispatch({ type: 'SET_FIELD', field: 'selectedFeature', value: e.target.value })
+                            dispatch({ type: 'SET_FIELD', field: 'selectedResource', value: '' })
+                          }}
+                          className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm bg-white mb-4"
+                        >
+                          <option value="">Select a feature...</option>
+                          {SERVICES.map(service => {
+                            const mutableFeatures = (SERVICE_FEATURES[service.id] || []).filter(f => f.mutable)
+                            if (mutableFeatures.length === 0) return null
+                            return (
+                              <optgroup key={service.id} label={service.name}>
+                                {mutableFeatures.map(feature => (
+                                  <option key={`${service.id}_${feature.slug}`} value={`${service.id}_${feature.slug}`}>
+                                    {feature.name} ({service.name})
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )
+                          })}
+                        </select>
+                      </>
+                    )}
+
+                    {/* For PAYG: Meter picker */}
+                    {state.monetizationStrategy === 'payg' && (
+                      <>
+                        <label className="block text-sm font-medium text-g-700 mb-1.5">
+                          Which meter?
+                        </label>
+                        <select
+                          value={state.selectedMeter}
+                          onChange={(e) => {
+                            dispatch({ type: 'SET_FIELD', field: 'selectedMeter', value: e.target.value })
+                            dispatch({ type: 'SET_FIELD', field: 'selectedResource', value: '' })
+                          }}
+                          className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm bg-white mb-4"
+                        >
+                          <option value="">Select a meter...</option>
+                          {METERS.map(meter => (
+                            <option key={meter.id} value={meter.id}>
+                              {meter.name} ({meter.unit})
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+
+                    {/* Resource picker - shows for PAYG or when metered feature selected */}
+                    {((state.monetizationStrategy === 'payg' && state.selectedMeter) ||
+                      (['subscription', 'prepaid'].includes(state.monetizationStrategy) && state.selectedFeature === 'build_minutes')) && (
+                      <>
+                        <label className="block text-sm font-medium text-g-700 mb-1.5">
+                          Which resource?
+                        </label>
+                        <select
+                          value={state.selectedResource}
+                          onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'selectedResource', value: e.target.value })}
+                          className="w-full px-3.5 py-2.5 border border-g-200 rounded text-sm bg-white"
+                        >
+                          <option value="">Select a resource...</option>
+                          {METERED_RESOURCES.filter(r =>
+                            state.monetizationStrategy === 'payg'
+                              ? r.meters.includes(state.selectedMeter)
+                              : r.meters.some(m => METERS.find(meter => meter.id === m && meter.feature === state.selectedFeature))
+                          ).map(resource => (
+                            <option key={resource.id} value={resource.id}>
+                              {resource.name} — {resource.desc}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Rate Cards and Config - smooth transition */}
+            <div
+              className="overflow-hidden transition-all duration-300 ease-in-out"
+              style={{
+                maxHeight: state.monetizationStrategy && (
+                  state.monetizationStrategy === 'subscription' ? (
+                    state.pricingModel === 'fixed' ? state.pricingModel :
+                    state.pricingModel === 'per-unit' ? state.selectedFeature :
+                    false
+                  ) :
+                  state.monetizationStrategy === 'payg' ? state.selectedMeter && state.selectedResource :
+                  state.monetizationStrategy === 'prepaid' ? state.selectedFeature :
+                  state.monetizationStrategy === 'one-time' ? true :
+                  false
+                ) ? '3000px' : '0',
+                opacity: state.monetizationStrategy && (
+                  state.monetizationStrategy === 'subscription' ? (
+                    state.pricingModel === 'fixed' ? state.pricingModel :
+                    state.pricingModel === 'per-unit' ? state.selectedFeature :
+                    false
+                  ) :
+                  state.monetizationStrategy === 'payg' ? state.selectedMeter && state.selectedResource :
+                  state.monetizationStrategy === 'prepaid' ? state.selectedFeature :
+                  state.monetizationStrategy === 'one-time' ? true :
+                  false
+                ) ? 1 : 0
+              }}
+            >
+              {state.monetizationStrategy && (
+                <>
+                  <div className="border-t border-g-200 my-6" />
+
+                  <div className="mb-6">
+                <label className="block text-sm font-medium text-g-700 mb-3">
+                  {state.monetizationStrategy === 'payg' ? 'Rate Cards' : 'Pricing'}
+                </label>
+
+                {state.rateCards.length === 0 ? (
+                  <div className="p-6 border border-g-200 rounded bg-g-50 text-center">
+                    <div className="text-sm text-g-500">No pricing configured yet</div>
+                    <div className="text-xs text-g-400 mt-1">
+                      {state.monetizationStrategy === 'payg'
+                        ? 'Add rate cards for each metered resource you want to charge for'
+                        : 'Configure your pricing below'}
+                    </div>
+                  </div>
+                ) : (
+                  state.rateCards.map((card, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 border border-g-200 rounded mb-2 bg-white hover:border-g-300 transition-all">
+                      <div className="flex-1">
+                        <div className="text-sm font-semibold text-g-900">
+                          {card.feature && (
+                            <span className="text-blue mr-2">
+                              {card.feature === 'general_seats' && 'Seats'}
+                              {card.feature === 'build_minutes' && 'Build Minutes'}
+                              {card.feature === 'tc_minutes' && 'TC Runtime Minutes'}
+                              {!['general_seats', 'build_minutes', 'tc_minutes'].includes(card.feature) && card.feature}
+                            </span>
+                          )}
+                          {card.meter && (
+                            <span className="text-blue mr-2">
+                              {METERS.find(m => m.id === card.meter)?.name}
+                              {card.resource && ` — ${METERED_RESOURCES.find(r => r.id === card.resource)?.name}`}
+                            </span>
+                          )}
+                          {card.pricingModel === 'fixed' && `${card.price > 0 ? ` $${card.price}` : 'Free'}`}
+                          {card.pricingModel === 'per-unit' && `$${card.perUnitPrice} per unit`}
+                          {card.pricingModel === 'block' && `${card.blockSize} units for $${card.blockPrice}`}
+                          {card.pricingModel === 'graduated' && '(graduated pricing)'}
+                          {card.pricingModel === 'volume' && '(volume pricing)'}
+                          {card.billingPeriod && (
+                            <span className="text-g-500 text-xs ml-2">
+                              ({card.billingPeriod === 'both' ? 'monthly & annual' : card.billingPeriod})
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-g-400 mt-1">
+                          {card.billingTiming} · {card.billingCycle}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => dispatch({ type: 'REMOVE_RATE_CARD', index })}
+                        className="w-7 h-7 border border-g-200 rounded flex items-center justify-center text-g-400 hover:border-g-300 hover:text-g-700"
+                        title="Remove"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))
+                )}
+                  </div>
+
+                  {/* Configuration Forms */}
+                  {state.monetizationStrategy === 'subscription' && renderSubscriptionConfig()}
+                  {state.monetizationStrategy === 'payg' && renderPaygConfig()}
+                  {state.monetizationStrategy === 'prepaid' && renderPrepaidConfig()}
+                  {state.monetizationStrategy === 'one-time' && renderOneTimeConfig()}
+                </>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+        {/* Pricing Summary - Always at bottom */}
+        <div
+          className="overflow-hidden transition-all duration-300 ease-in-out"
+          style={{
+            maxHeight: pricingSummary ? '200px' : '0',
+            marginTop: pricingSummary ? '1.5rem' : '0',
+            marginBottom: pricingSummary ? '1rem' : '0',
+            opacity: pricingSummary ? 1 : 0
+          }}
+        >
+          <div className="p-4 bg-blue-light/10 border border-blue/20 rounded">
+            <div className="text-sm text-g-700">{pricingSummary || '\u00A0'}</div>
           </div>
         </div>
-      )}
 
-      {state.rateCards.length > 0 && (
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-g-700 mb-3">Rate Cards</label>
-          {state.rateCards.map((card, index) => (
-            <div key={index} className="flex items-center justify-between p-4 border border-g-200 rounded mb-2 bg-white hover:border-g-300 transition-all">
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-g-900">
-                  {card.pricingModel === 'fixed' && `Fixed${card.price > 0 ? ` · $${card.price}` : ' · Free'}`}
-                  {card.pricingModel === 'per-unit' && `Per unit · $${card.perUnitPrice}`}
-                  {card.pricingModel === 'block' && `Block · ${card.blockSize} units · $${card.blockPrice}`}
-                  {card.pricingModel === 'graduated' && 'Graduated pricing'}
-                  {card.pricingModel === 'volume' && 'Volume pricing'}
-                </div>
-                <div className="text-xs text-g-400 mt-1">
-                  {card.billingTiming} · {card.billingCycle}
-                </div>
-              </div>
-              <button
-                onClick={() => dispatch({ type: 'REMOVE_RATE_CARD', index })}
-                className="w-7 h-7 border border-g-200 rounded flex items-center justify-center text-g-400 hover:border-g-300 hover:text-g-700"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
+        <div className="flex gap-2 mt-6 pt-5 border-t border-g-200 justify-end">
+          <button
+            onClick={() => setCurrentStep(1)}
+            className="px-5 py-2.5 bg-white text-g-700 border border-g-200 rounded text-sm font-medium hover:border-g-300 hover:bg-g-50"
+          >
+            Back
+          </button>
+          <button
+            onClick={() => setCurrentStep(3)}
+            disabled={!canProceedStep2()}
+            className="px-5 py-2.5 bg-blue text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-35"
+          >
+            Continue to Entitlements
+          </button>
         </div>
-      )}
-
-      {state.monetizationStrategy === 'subscription' && renderSubscriptionConfig()}
-      {state.monetizationStrategy === 'payg' && renderPaygConfig()}
-      {state.monetizationStrategy === 'prepaid' && renderPrepaidConfig()}
-      {state.monetizationStrategy === 'one-time' && renderOneTimeConfig()}
-
-      <div className="flex gap-2 mt-6 pt-5 border-t border-g-200 justify-end">
-        <button
-          onClick={() => setCurrentStep(1)}
-          className="px-5 py-2.5 bg-white text-g-700 border border-g-200 rounded text-sm font-medium hover:border-g-300 hover:bg-g-50"
-        >
-          Back
-        </button>
-        <button
-          onClick={() => setCurrentStep(3)}
-          disabled={!canProceedStep2()}
-          className="px-5 py-2.5 bg-blue text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-35"
-        >
-          Continue to Entitlements
-        </button>
       </div>
-    </div>
-  )
+    )
+  }
 
   const renderStep3 = () => {
     const requiredFeatures = getRequiredFeatures()
