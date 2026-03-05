@@ -11,6 +11,7 @@ import FeaturesIndex from './pages/FeaturesIndex'
 import ServiceDetail from './pages/ServiceDetail'
 import MetersIndex from './pages/MetersIndex'
 import CreateOfferingWizard from './pages/CreateOfferingWizard'
+import PricingPlayground from './pages/PricingPlayground'
 
 function App() {
   const [environment, setEnvironment] = useState('staging')
@@ -39,6 +40,7 @@ function App() {
               <Route path="/meters" element={<MetersIndex onOpenDrawer={setDrawerContent} />} />
               <Route path="/create/offering" element={<CreateOfferingWizard />} />
               <Route path="/create/addon" element={<CreateOfferingWizard isAddon />} />
+              <Route path="/playground/pricing" element={<PricingPlayground />} />
             </Routes>
           </div>
         </main>

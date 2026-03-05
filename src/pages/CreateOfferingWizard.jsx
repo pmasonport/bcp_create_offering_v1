@@ -1,5 +1,5 @@
 import React, { useReducer, useState, useMemo } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import Stepper from '../components/Stepper'
 import SelectCard from '../components/SelectCard'
 import TierBuilder from '../components/TierBuilder'
