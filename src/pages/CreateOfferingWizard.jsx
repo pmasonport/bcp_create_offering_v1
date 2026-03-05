@@ -197,6 +197,27 @@ export default function CreateOfferingWizard({ isAddon = false }) {
   }
 
   // Step 2 validation
+  // Helper to check if PAYG editing card is valid
+  const isPaygEditingCardValid = () => {
+    if (!editingCard.feature || !editingCard.pricingModel) return false
+
+    if (editingCard.pricingModel === 'per-unit') {
+      return !!editingCard.perUnitPrice
+    }
+
+    if (editingCard.pricingModel === 'block') {
+      return !!editingCard.blockSize && !!editingCard.blockPrice
+    }
+
+    if (editingCard.pricingModel === 'graduated' || editingCard.pricingModel === 'volume') {
+      if (!editingCard.tiers || editingCard.tiers.length === 0) return false
+      // Check that all tiers have at least perUnit filled
+      return editingCard.tiers.every(tier => tier.perUnit !== '' && tier.perUnit !== undefined)
+    }
+
+    return false
+  }
+
   const canProceedStep2 = () => {
     // Must select free or paid
     if (state.isPaid === null) return false
@@ -227,7 +248,12 @@ export default function CreateOfferingWizard({ isAddon = false }) {
       return !!editingCard.billingTiming && !!editingCard.monthlyPrice
     }
 
-    // Other strategies (PAYG, prepaid) need at least one rate card
+    // For PAYG, check if there's at least one saved rate card OR if the editing card is valid
+    if (state.monetizationStrategy === 'payg') {
+      return state.rateCards.length > 0 || isPaygEditingCardValid()
+    }
+
+    // For prepaid, need at least one rate card
     return state.rateCards.length > 0
   }
 
@@ -1223,13 +1249,13 @@ export default function CreateOfferingWizard({ isAddon = false }) {
           )}
         </div>
 
-        {/* Only show "Add metered resource" if editing card has enough data */}
-        {editingCard.feature && editingCard.pricingModel && (
+        {/* Only show "Add another metered resource" if editing card is complete */}
+        {isPaygEditingCardValid() && (
           <button
             onClick={() => addRateCard()}
             className="text-sm text-blue hover:underline"
           >
-            + Add metered resource
+            + Add another metered resource
           </button>
         )}
       </div>
@@ -1397,10 +1423,10 @@ export default function CreateOfferingWizard({ isAddon = false }) {
       // For PAYG, check editingCard or rate cards
       if (state.isPaid === true && state.monetizationStrategy === 'payg') {
         const formatPrice = (price) => parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-        const totalResources = state.rateCards.length + (editingCard.feature && editingCard.pricingModel ? 1 : 0)
+        const totalResources = state.rateCards.length + (isPaygEditingCardValid() ? 1 : 0)
 
         if (totalResources > 0) {
-          const timing = editingCard.billingTiming ? ` (${editingCard.billingTiming === 'advance' ? 'in-advance' : 'in-arrears'})` : ''
+          const timing = editingCard.billingTiming ? ` (${editingCard.billingTiming === 'advance' ? 'in-advance' : 'in-arrears'})` : ' (in-arrears)'
           return `Customers pay based on usage${totalResources > 1 ? ` across ${totalResources} metered resources` : ''}${timing}.`
         }
       }
