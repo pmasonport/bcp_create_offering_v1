@@ -1,0 +1,53 @@
+{
+  "offeringType": "base",
+  "offeringName": "Gordon AI Tokens",
+  "isFree": false,
+  "freeOptIn": null,
+  "components": [
+    {
+      "type": "prepaid",
+      "monetization_strategy": "prepaid",
+      "rateCards": [
+        {
+          "label": "AI tokens · pack · advance · one-time · 500000 units",
+          "price": "$100 for 500,000 AI tokens",
+          "packQty": 500000,
+          "packPrice": 100,
+          "unitPrice": "0.0002000",
+          "packIndex": 0
+        }
+      ],
+      "packs": [
+        {
+          "qty": 500000,
+          "price": 100
+        }
+      ],
+      "expires": false,
+      "expiryMonths": "",
+      "stackable": true,
+      "resource": "AI tokens",
+      "_original": {
+        "type": "prepaid",
+        "resource": "AI tokens",
+        "packs": [
+          {
+            "qty": "500000",
+            "price": "100"
+          }
+        ],
+        "expires": false,
+        "expiryMonths": "",
+        "stackable": true,
+        "monetization_strategy": "prepaid"
+      }
+    }
+  ],
+  "trial": null,
+  "_meta": {
+    "version": "1.0",
+    "exportedAt": "2026-03-06T08:16:00.000Z",
+    "transformedFormat": true,
+    "offeringType": "base"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "offeringType": "base",
+  "offeringName": "Prepaid Sandbox Credits",
+  "isFree": false,
+  "freeOptIn": null,
+  "components": [
+    {
+      "type": "prepaid",
+      "monetization_strategy": "prepaid",
+      "rateCards": [
+        {
+          "label": "Compute seconds · pack · advance · one-time · 1000000 units",
+          "price": "$50 for 1,000,000 compute seconds",
+          "packQty": 1000000,
+          "packPrice": 50,
+          "unitPrice": "0.0000500",
+          "packIndex": 0
+        }
+      ],
+      "packs": [
+        {
+          "qty": 1000000,
+          "price": 50
+        }
+      ],
+      "expires": false,
+      "expiryMonths": "",
+      "stackable": true,
+      "resource": "Compute seconds",
+      "_original": {
+        "type": "prepaid",
+        "resource": "Compute seconds",
+        "packs": [
+          {
+            "qty": "1000000",
+            "price": "50"
+          }
+        ],
+        "expires": false,
+        "expiryMonths": "",
+        "stackable": true,
+        "monetization_strategy": "prepaid"
+      }
+    }
+  ],
+  "trial": null,
+  "_meta": {
+    "version": "1.0",
+    "exportedAt": "2026-03-06T08:15:00.000Z",
+    "transformedFormat": true,
+    "offeringType": "base"
+  }
+}

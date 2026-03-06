@@ -5,6 +5,9 @@ import gordonProRaw from './examples/gordon-pro-config.json'
 import sandboxesRaw from './examples/sandboxes-config.json'
 import dhiSelectRaw from './examples/docker-hardened-images-select-config.json'
 import dhiEnterpriseRaw from './examples/docker-hardened-images-enterprise-config.json'
+import apiCallsRaw from './examples/api-calls-config.json'
+import sandboxPrepaidRaw from './examples/sandbox-prepaid-config.json'
+import gordonAiTokensRaw from './examples/gordon-ai-tokens-config.json'
 
 // Helper: Extract _original data from exported JSON for form state
 function extractFormState(exportedData) {
@@ -46,11 +49,32 @@ export const EXAMPLE_OFFERINGS = [
     state: extractFormState(gordonProRaw)
   },
   {
+    id: 'gordon-ai-tokens',
+    name: 'Gordon AI Tokens',
+    description: '$100 for 500K AI tokens — no expiry, stackable, AI-powered assistant',
+    category: 'Base • Prepaid',
+    state: extractFormState(gordonAiTokensRaw)
+  },
+  {
+    id: 'api-calls',
+    name: 'API Pro',
+    description: '$50/month with 1,000 API calls, unlimited rollover, $0.05 overage',
+    category: 'Base • Subscription',
+    state: extractFormState(apiCallsRaw)
+  },
+  {
     id: 'sandboxes',
     name: 'Sandboxes',
     description: 'PAYG with multiple resources — per-unit and graduated tiers',
     category: 'Base • PAYG',
     state: extractFormState(sandboxesRaw)
+  },
+  {
+    id: 'sandbox-prepaid',
+    name: 'Prepaid Sandbox Credits',
+    description: '$50 for 1M compute seconds — no expiry, stackable top-ups',
+    category: 'Base • Prepaid',
+    state: extractFormState(sandboxPrepaidRaw)
   },
   {
     id: 'dhi-select',

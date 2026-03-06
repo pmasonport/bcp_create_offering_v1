@@ -1,0 +1,68 @@
+{
+  "offeringType": "base",
+  "offeringName": "API Pro",
+  "isFree": false,
+  "freeOptIn": null,
+  "components": [
+    {
+      "type": "subscription",
+      "monetization_strategy": "subscription",
+      "rateCards": [
+        {
+          "label": "API calls · metered · advance · monthly · 1000 included",
+          "price": "$50.00 / month (includes 1000 API calls)",
+          "rawAmount": 50,
+          "cycle": "monthly",
+          "includedAmount": 1000,
+          "recurrence": "monthly",
+          "overage": "payg",
+          "overageRate": "0.05",
+          "rollover": true,
+          "rollCapType": "unlimited"
+        }
+      ],
+      "feature": "API calls",
+      "featureType": "metered",
+      "unitLabel": "call",
+      "timing": "advance",
+      "cycle": null,
+      "billingCycle": "monthly",
+      "recurrenceMonthly": "monthly",
+      "includedAmountMonthly": "1000",
+      "overage": "payg",
+      "overageRate": "0.05",
+      "rollover": true,
+      "rollCapType": "unlimited",
+      "_original": {
+        "type": "subscription",
+        "whatGet": "quantity",
+        "feature": "API calls",
+        "quantity": "",
+        "overage": "payg",
+        "overageRate": "0.05",
+        "rollover": true,
+        "rollCapType": "unlimited",
+        "rollCap": "unlimited",
+        "timing": "advance",
+        "cycle": null,
+        "price": "50",
+        "priceAnnual": "",
+        "billingCycle": "monthly",
+        "recurrenceMonthly": "monthly",
+        "recurrenceAnnual": null,
+        "includedAmountMonthly": "1000",
+        "includedAmountAnnual": "",
+        "featureType": "metered",
+        "unitLabel": "call",
+        "monetization_strategy": "subscription"
+      }
+    }
+  ],
+  "trial": null,
+  "_meta": {
+    "version": "1.0",
+    "exportedAt": "2026-03-06T08:10:00.000Z",
+    "transformedFormat": true,
+    "offeringType": "base"
+  }
+}

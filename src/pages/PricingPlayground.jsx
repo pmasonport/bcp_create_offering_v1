@@ -405,7 +405,7 @@ function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onC
      (c.recurrenceMonthly && c.recurrenceAnnual && c.includedAmountMonthly && c.includedAmountAnnual && c.price && c.priceAnnual))
     && c.timing && c.overage
     && (c.overage === 'hardstop' || c.overageRate)
-    && (c.rollover === false || (c.rollCapType && c.rollCap))
+    && (c.rollover === false || (c.rollCapType && (c.rollCapType === 'unlimited' || c.rollCap)))
 
   const isMeteredQuantity = c.whatGet === 'quantity' && c.feature && featureType(c.feature) === 'metered'
 
@@ -701,12 +701,14 @@ function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onC
                     <Fade key="roll-cap">
                       <div style={{ marginTop:14 }}>
                         <SectionQ>Maximum rollover cap</SectionQ>
-                        <div style={{ display:'flex', gap:8, marginBottom:10 }}>
+                        <div style={{ display:'flex', gap:8, marginBottom:10, flexWrap:'wrap' }}>
                           <Pill active={c.rollCapType==='multiplier'} onClick={()=>upd('rollCapType','multiplier')}>Multiplier (e.g. 2×)</Pill>
                           <Pill active={c.rollCapType==='fixed'} onClick={()=>upd('rollCapType','fixed')}>Fixed amount</Pill>
+                          <Pill active={c.rollCapType==='unlimited'} onClick={()=>{upd('rollCapType','unlimited');upd('rollCap','unlimited')}}>Unlimited</Pill>
                         </div>
                         {c.rollCapType==='multiplier' && <Input type="number" placeholder="2" value={c.rollCap} onChange={e=>upd('rollCap',e.target.value)} style={{ width:100 }}/>}
                         {c.rollCapType==='fixed' && <Input type="number" placeholder="1000" value={c.rollCap} onChange={e=>upd('rollCap',e.target.value)} style={{ width:160 }}/>}
+                        {c.rollCapType==='unlimited' && <Explainer>Unused allowance will accumulate indefinitely with no maximum cap.</Explainer>}
                       </div>
                     </Fade>
                   )}
@@ -1437,7 +1439,8 @@ function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringN
         if (comp.overage === 'hardstop') includes.push(`Hard stop when allowance runs out`)
         if (comp.overage === 'payg') includes.push(`Overage billed monthly: $${comp.overageRate} per extra ${comp.feature}`)
         if (comp.rollover === false) includes.push(`No rollover — use it or lose it`)
-        if (comp.rollover === true) includes.push(`Rollover: up to ${comp.rollCap}${comp.rollCapType === 'multiplier' ? '× allowance' : ` ${comp.feature}`}`)
+        if (comp.rollover === true && comp.rollCapType === 'unlimited') includes.push(`Rollover: unlimited accumulation`)
+        if (comp.rollover === true && comp.rollCapType !== 'unlimited') includes.push(`Rollover: up to ${comp.rollCap}${comp.rollCapType === 'multiplier' ? '× allowance' : ` ${comp.feature}`}`)
       } else {
         // Original flow for access or mutable quantity
         const hasBoth = comp.cycle==='both' && comp.price && comp.priceAnnual
@@ -1502,7 +1505,8 @@ function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringN
         if (comp.timing==='arrears') includes.push('Billed at the end of each period')
         if (comp.overage==='hardstop') includes.push(`Usage stops when ${comp.feature} runs out`)
         if (comp.overage==='payg') includes.push(`Overage: $${comp.overageRate} / extra unit`)
-        if (comp.rollover) includes.push(`Rollover: up to ${comp.rollCap}${comp.rollCapType==='multiplier'?'× monthly allocation':` ${comp.feature}`}`)
+        if (comp.rollover && comp.rollCapType === 'unlimited') includes.push(`Rollover: unlimited accumulation`)
+        if (comp.rollover && comp.rollCapType !== 'unlimited') includes.push(`Rollover: up to ${comp.rollCap}${comp.rollCapType==='multiplier'?'× monthly allocation':` ${comp.feature}`}`)
       }
     }
 
@@ -1882,23 +1886,28 @@ export default function PricingPlayground() {
     mfc: <MFCForm onDone={handleStratDone} initialData={getInitialData('mfc')}/>,
   }
 
+  // Helper to reset configuration state (used when switching modes)
+  const resetConfigState = () => {
+    setOfferingType(null)
+    setCompatibleWith([])
+    setCustomOfferings([])
+    setOfferingName('')
+    setIsFree(null)
+    setFreeOptIn(null)
+    setComponents([])
+    setActiveType(null)
+    setShowPicker(false)
+    setTrial(null)
+    setShowTrial(false)
+    setSessionMetered([])
+    setSessionMutable([])
+    setEditIndex(null)
+    setEditingComponent(null)
+  }
+
   const handleReset = () => {
     if (window.confirm('Reset all fields? This will clear everything you\'ve entered.')) {
-      setOfferingType(null)
-      setCompatibleWith([])
-      setCustomOfferings([])
-      setOfferingName('')
-      setIsFree(null)
-      setFreeOptIn(null)
-      setComponents([])
-      setActiveType(null)
-      setShowPicker(false)
-      setTrial(null)
-      setShowTrial(false)
-      setSessionMetered([])
-      setSessionMutable([])
-      setEditIndex(null)
-      setEditingComponent(null)
+      resetConfigState()
       setShowExamples(null)
       setSelectedExample(null)
     }
@@ -1943,7 +1952,7 @@ export default function PricingPlayground() {
         <div style={{ fontSize:13, color:G500, marginBottom:24 }}>Configure how customers will be charged for this offering.</div>
 
         <Alert type="warning">
-          <strong>Note:</strong> This tool is illustrative and experimental. For a complete list of supported monetization strategies and capabilities, please check the <a href="https://docs.google.com/document/d/1UbLv9W8jCThbO7Ly13zrcFAYujRghpka0nLgMhwnkT8/edit?tab=t.f4cd87mzobtj" target="_blank" rel="noopener noreferrer" style={{ color:ORANGE, textDecoration:'underline' }}>on-rails billing definitions</a>.
+          <strong>Note:</strong> This tool is illustrative and experimental. For a complete list of supported monetization strategies and capabilities, check the <a href="https://docs.google.com/document/d/1UbLv9W8jCThbO7Ly13zrcFAYujRghpka0nLgMhwnkT8/edit?tab=t.f4cd87mzobtj" target="_blank" rel="noopener noreferrer" style={{ color:ORANGE, textDecoration:'underline' }}>on-rails billing definitions</a>.
         </Alert>
 
         {/* Step -1: See example or create your own - always visible */}
@@ -1955,9 +1964,9 @@ export default function PricingPlayground() {
               desc="Explore pre-configured offerings to learn or use as a starting point."
               selected={showExamples === 'examples'}
               onClick={() => {
+                resetConfigState()
                 setShowExamples('examples')
                 setSelectedExample(null)
-                setOfferingType(null)
               }}
             />
             <SelCard
@@ -1965,6 +1974,7 @@ export default function PricingPlayground() {
               desc="Build a new offering from scratch."
               selected={showExamples === 'scratch'}
               onClick={() => {
+                resetConfigState()
                 setShowExamples('scratch')
                 setSelectedExample(null)
               }}
@@ -2043,38 +2053,6 @@ export default function PricingPlayground() {
         {(offeringType || selectedExample) && (
           <Fade key="name">
             <Divider mt={28} mb={28} />
-            {selectedExample && (
-              <div style={{ marginBottom:16, fontSize:12, color:G500, display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                Loaded from example: <strong>{EXAMPLE_OFFERINGS.find(e => e.id === selectedExample)?.name}</strong>
-                {' · '}
-                <button
-                  onClick={() => {
-                    // Allow switching to another example
-                    setSelectedExample(null)
-                    // Keep showExamples='examples' to show picker again
-                  }}
-                  style={{ background:'none', border:'none', color:B, textDecoration:'underline', cursor:'pointer', fontSize:12, fontFamily:'inherit' }}
-                >
-                  Load different example
-                </button>
-                {' · '}
-                <button
-                  onClick={() => {
-                    setSelectedExample(null)
-                    setShowExamples(null)
-                    // Reset all state
-                    handleReset()
-                  }}
-                  style={{ background:'none', border:'none', color:G500, textDecoration:'underline', cursor:'pointer', fontSize:12, fontFamily:'inherit' }}
-                >
-                  Start from scratch
-                </button>
-              </div>
-            )}
             <div style={{ marginBottom:28 }}>
               <Label hint="optional">{offeringType === 'addon' ? 'Add-on name' : 'Offering name'}</Label>
               <Input
