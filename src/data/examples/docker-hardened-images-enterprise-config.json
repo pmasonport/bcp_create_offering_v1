@@ -1,0 +1,59 @@
+{
+  "offeringType": "base",
+  "offeringName": "DHI Enterprise",
+  "isFree": false,
+  "freeOptIn": null,
+  "components": [
+    {
+      "type": "subscription",
+      "monetization_strategy": "subscription",
+      "rateCards": [
+        {
+          "label": "Hardened image repositories · fixed · advance · annual",
+          "price": "$8000.00 / year",
+          "rawAmount": 8000,
+          "cycle": "annual"
+        }
+      ],
+      "feature": "Hardened image repositories",
+      "featureType": "mutable",
+      "unitLabel": "repo",
+      "timing": "advance",
+      "cycle": "annual",
+      "_original": {
+        "type": "subscription",
+        "whatGet": "quantity",
+        "feature": "Hardened image repositories",
+        "quantity": "",
+        "overage": null,
+        "overageRate": "",
+        "rollover": null,
+        "rollCapType": null,
+        "rollCap": "",
+        "timing": "advance",
+        "cycle": "annual",
+        "price": "",
+        "priceAnnual": "8000",
+        "billingCycle": null,
+        "recurrenceMonthly": null,
+        "recurrenceAnnual": null,
+        "includedAmountMonthly": "",
+        "includedAmountAnnual": "",
+        "featureType": "mutable",
+        "unitLabel": "repo",
+        "monetization_strategy": "subscription"
+      }
+    }
+  ],
+  "trial": {
+    "type": "reverse",
+    "days": "30",
+    "downgradeTo": "DHI Community"
+  },
+  "_meta": {
+    "version": "1.0",
+    "exportedAt": "2026-03-06T14:30:00.000Z",
+    "transformedFormat": true,
+    "offeringType": "base"
+  }
+}

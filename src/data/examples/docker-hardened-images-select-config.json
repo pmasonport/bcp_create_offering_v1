@@ -1,0 +1,55 @@
+{
+  "offeringType": "base",
+  "offeringName": "DHI Select",
+  "isFree": false,
+  "freeOptIn": null,
+  "components": [
+    {
+      "type": "subscription",
+      "monetization_strategy": "subscription",
+      "rateCards": [
+        {
+          "label": "Hardened image repositories · fixed · advance · annual",
+          "price": "$5000.00 / year",
+          "rawAmount": 5000,
+          "cycle": "annual"
+        }
+      ],
+      "feature": "Hardened image repositories",
+      "featureType": "mutable",
+      "unitLabel": "repo",
+      "timing": "advance",
+      "cycle": "annual",
+      "_original": {
+        "type": "subscription",
+        "whatGet": "quantity",
+        "feature": "Hardened image repositories",
+        "quantity": "",
+        "overage": null,
+        "overageRate": "",
+        "rollover": null,
+        "rollCapType": null,
+        "rollCap": "",
+        "timing": "advance",
+        "cycle": "annual",
+        "price": "",
+        "priceAnnual": "5000",
+        "billingCycle": null,
+        "recurrenceMonthly": null,
+        "recurrenceAnnual": null,
+        "includedAmountMonthly": "",
+        "includedAmountAnnual": "",
+        "featureType": "mutable",
+        "unitLabel": "repo",
+        "monetization_strategy": "subscription"
+      }
+    }
+  ],
+  "trial": null,
+  "_meta": {
+    "version": "1.0",
+    "exportedAt": "2026-03-06T12:35:40.943Z",
+    "transformedFormat": true,
+    "offeringType": "base"
+  }
+}

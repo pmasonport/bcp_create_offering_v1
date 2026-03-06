@@ -1,0 +1,55 @@
+{
+  "offeringType": "base",
+  "offeringName": "Gordon Pro",
+  "isFree": false,
+  "freeOptIn": null,
+  "components": [
+    {
+      "type": "subscription",
+      "monetization_strategy": "subscription",
+      "rateCards": [
+        {
+          "label": "Subscription · fixed · advance · monthly",
+          "price": "$20.00 / month",
+          "rawAmount": 20,
+          "cycle": "monthly"
+        }
+      ],
+      "feature": null,
+      "featureType": null,
+      "unitLabel": null,
+      "timing": "advance",
+      "cycle": "monthly",
+      "_original": {
+        "type": "subscription",
+        "whatGet": "access",
+        "feature": null,
+        "quantity": "",
+        "overage": null,
+        "overageRate": "",
+        "rollover": null,
+        "rollCapType": null,
+        "rollCap": "",
+        "timing": "advance",
+        "cycle": "monthly",
+        "price": "20",
+        "priceAnnual": "",
+        "billingCycle": null,
+        "recurrenceMonthly": null,
+        "recurrenceAnnual": null,
+        "includedAmountMonthly": "",
+        "includedAmountAnnual": "",
+        "featureType": null,
+        "unitLabel": null,
+        "monetization_strategy": "subscription"
+      }
+    }
+  ],
+  "trial": null,
+  "_meta": {
+    "version": "1.0",
+    "exportedAt": "2026-03-06T12:53:52.465Z",
+    "transformedFormat": true,
+    "offeringType": "base"
+  }
+}

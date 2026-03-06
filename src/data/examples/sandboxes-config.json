@@ -1,0 +1,157 @@
+{
+  "offeringType": "base",
+  "offeringName": "Sandboxes",
+  "isFree": false,
+  "freeOptIn": null,
+  "components": [
+    {
+      "type": "payg",
+      "monetization_strategy": "payg",
+      "rateCards": [
+        {
+          "label": "Sandbox compute (vCPU-hrs) · per_unit · arrears · monthly",
+          "price": "$0.08 / sandbox compute (vcpu-hrs)",
+          "rawAmount": 0.08,
+          "model": "per_unit",
+          "resource": "Sandbox compute (vCPU-hrs)"
+        },
+        {
+          "label": "Sandbox memory (GB-hrs) · per_unit · arrears · monthly",
+          "price": "$0.01 / sandbox memory (gb-hrs)",
+          "rawAmount": 0.006,
+          "model": "per_unit",
+          "resource": "Sandbox memory (GB-hrs)"
+        },
+        {
+          "label": "Sandbox storage (GB-hrs) · graduated · arrears · monthly · tier 1",
+          "price": "0-10: $0 per unit",
+          "tierIndex": 0,
+          "tierMin": 0,
+          "tierMax": 10,
+          "tierPrice": 0,
+          "model": "graduated",
+          "resource": "Sandbox storage (GB-hrs)"
+        },
+        {
+          "label": "Sandbox storage (GB-hrs) · graduated · arrears · monthly · tier 2",
+          "price": "10-: $0.002 per unit",
+          "tierIndex": 1,
+          "tierMin": 10,
+          "tierMax": null,
+          "tierPrice": 0.002,
+          "model": "graduated",
+          "resource": "Sandbox storage (GB-hrs)"
+        }
+      ],
+      "resources": [
+        {
+          "resource": "Sandbox compute (vCPU-hrs)",
+          "model": "per_unit",
+          "price": "0.08",
+          "blockSize": "",
+          "blockPrice": "",
+          "tiers": [
+            {
+              "min": "0",
+              "max": "",
+              "price": ""
+            }
+          ]
+        },
+        {
+          "resource": "Sandbox memory (GB-hrs)",
+          "model": "per_unit",
+          "price": "0.006",
+          "blockSize": "",
+          "blockPrice": "",
+          "tiers": [
+            {
+              "min": "0",
+              "max": "",
+              "price": ""
+            }
+          ]
+        },
+        {
+          "resource": "Sandbox storage (GB-hrs)",
+          "model": "graduated",
+          "price": "",
+          "blockSize": "",
+          "blockPrice": "",
+          "tiers": [
+            {
+              "min": "0",
+              "max": "10",
+              "price": "0"
+            },
+            {
+              "min": "10",
+              "max": "",
+              "price": "0.002"
+            }
+          ]
+        }
+      ],
+      "_original": {
+        "type": "payg",
+        "resources": [
+          {
+            "resource": "Sandbox compute (vCPU-hrs)",
+            "model": "perunit",
+            "price": "0.08",
+            "blockSize": "",
+            "blockPrice": "",
+            "tiers": [
+              {
+                "min": "0",
+                "max": "",
+                "price": ""
+              }
+            ]
+          },
+          {
+            "resource": "Sandbox memory (GB-hrs)",
+            "model": "perunit",
+            "price": "0.006",
+            "blockSize": "",
+            "blockPrice": "",
+            "tiers": [
+              {
+                "min": "0",
+                "max": "",
+                "price": ""
+              }
+            ]
+          },
+          {
+            "resource": "Sandbox storage (GB-hrs)",
+            "model": "graduated",
+            "price": "",
+            "blockSize": "",
+            "blockPrice": "",
+            "tiers": [
+              {
+                "min": "0",
+                "max": "10",
+                "price": "0"
+              },
+              {
+                "min": "10",
+                "max": "",
+                "price": "0.002"
+              }
+            ]
+          }
+        ],
+        "monetization_strategy": "payg"
+      }
+    }
+  ],
+  "trial": null,
+  "_meta": {
+    "version": "1.0",
+    "exportedAt": "2026-03-06T12:52:24.304Z",
+    "transformedFormat": true,
+    "offeringType": "base"
+  }
+}

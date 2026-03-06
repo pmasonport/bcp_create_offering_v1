@@ -4,12 +4,14 @@ import { METERS } from '../data/meters'
 import { OFFERINGS } from '../data/offerings'
 import { getMutableAndMeteredFeatures } from '../data/helpers'
 import { transformComponentForExport } from '../utils/pricingTransform'
+import { EXAMPLE_OFFERINGS } from '../data/exampleOfferings'
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────
 const B = '#2560FF', BL = '#EEF2FF', BBG = '#F8FAFF'
 const G50='#F9FAFB',G100='#F3F4F6',G200='#E5E7EB',G300='#D1D5DB'
 const G400='#9CA3AF',G500='#6B7280',G700='#374151',G900='#111827'
 const GREEN='#10B981'
+const ORANGE='#F97316', ORANGE_BG='#FFF7ED', ORANGE_BORDER='#FDBA74'
 
 // ─── Utilities ──────────────────────────────────────────────────────────────
 // Helper to convert recurrence period to display text
@@ -61,6 +63,33 @@ const SectionQ = ({ children }) => <div style={{ fontSize:11, fontWeight:600, co
 const Divider = ({ mt=28, mb=28 }) => <div style={{ height:1, background:G200, margin:`${mt}px 0 ${mb}px` }} />
 const Note = ({ children }) => <div style={{ padding:'8px 12px', background:G50, border:`1px solid ${G100}`, borderRadius:4, fontSize:12, color:G500, lineHeight:1.6, marginBottom:16 }}>{children}</div>
 const Explainer = ({ children }) => <div style={{ padding:'8px 10px', background:G50, border:`1px solid ${G100}`, borderRadius:4, fontSize:12, color:G500, lineHeight:1.6, marginTop:6 }}>{children}</div>
+const Alert = ({ children, type = 'info' }) => {
+  const styles = {
+    warning: {
+      background: ORANGE_BG,
+      border: `1px solid ${ORANGE_BORDER}`,
+      color: '#92400E'
+    },
+    info: {
+      background: G50,
+      border: `1px solid ${G100}`,
+      color: G500
+    }
+  }
+  const style = styles[type] || styles.info
+  return (
+    <div style={{ display:'flex', gap:10, padding:'12px 14px', borderRadius:6, fontSize:13, lineHeight:1.6, marginBottom:24, ...style }}>
+      {type === 'warning' && (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, marginTop:1 }}>
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      )}
+      <div>{children}</div>
+    </div>
+  )
+}
 
 const Pill = ({ children, active, onClick }) => (
   <button onClick={onClick} style={{ padding:'5px 12px', borderRadius:9999, fontSize:12, fontWeight:500, cursor:'pointer', border: active ? `1px solid ${B}` : `1px solid ${G200}`, background: active ? BL : '#fff', color: active ? B : G700, transition:'all 0.12s', outline:'none', fontFamily:'inherit' }}>
@@ -105,6 +134,87 @@ const SelCard = ({ title, desc, selected, onClick }) => (
     <div style={{ fontSize:12, color:G500, lineHeight:1.5 }}>{desc}</div>
   </div>
 )
+
+const ExampleCard = ({ example, onClick }) => {
+  // Check if has trial or add-on components
+  const hasTrial = example.state.trial !== null
+  const hasMultipleComponents = example.state.components.length > 1
+  const hasAddon = hasMultipleComponents && example.state.components.some(c => c.type !== example.state.components[0].type)
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        border:`1px solid ${G200}`,
+        borderRadius:6,
+        padding:'12px 14px',
+        cursor:'pointer',
+        background: '#fff',
+        position: 'relative'
+      }}
+    >
+      {/* Tags in top right */}
+      <div style={{ position:'absolute', top:12, right:12, display:'flex', gap:6, flexDirection:'row-reverse' }}>
+        {/* Main category tag */}
+        <div style={{
+          padding: '3px 8px',
+          background: G100,
+          border: `1px solid ${G300}`,
+          borderRadius: 4,
+          fontSize: 10,
+          fontWeight: 500,
+          color: G700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
+        }}>
+          {example.category}
+        </div>
+
+        {/* Free trial tag */}
+        {hasTrial && (
+          <div style={{
+            padding: '3px 8px',
+            background: G100,
+            border: `1px solid ${G300}`,
+            borderRadius: 4,
+            fontSize: 10,
+            fontWeight: 500,
+            color: G700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            Free trial
+          </div>
+        )}
+
+        {/* Add-on tag */}
+        {hasAddon && (
+          <div style={{
+            padding: '3px 8px',
+            background: G100,
+            border: `1px solid ${G300}`,
+            borderRadius: 4,
+            fontSize: 10,
+            fontWeight: 500,
+            color: G700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            + Add-on
+          </div>
+        )}
+      </div>
+
+      <div style={{ fontSize:13, fontWeight:500, color:G900, marginBottom:4, paddingRight: hasTrial || hasAddon ? 140 : 100 }}>
+        {example.name}
+      </div>
+
+      <div style={{ fontSize:12, color:G500, lineHeight:1.5 }}>
+        {example.description}
+      </div>
+    </div>
+  )
+}
 
 const BtnPrimary = ({ children, onClick, disabled }) => (
   <button onClick={onClick} disabled={disabled} style={{ background: disabled?G200:B, color: disabled?G400:'#fff', border:'none', borderRadius:4, padding:'9px 18px', fontSize:13, fontWeight:500, cursor: disabled?'default':'pointer', display:'inline-flex', alignItems:'center', gap:6, fontFamily:'inherit' }}>
@@ -1145,34 +1255,41 @@ function CompletedCard({ comp, onEdit, onRemove }) {
 // ─── Pricing Table for Tiers ───────────────────────────────────────────────
 function PricingTable({ resource, model, tiers }) {
   return (
-    <div style={{ marginTop: 12, marginBottom: 16, border: `1px solid ${G200}`, borderRadius: 6, overflow: 'hidden' }}>
-      <div style={{ background: G50, padding: '8px 12px', borderBottom: `1px solid ${G200}` }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: G500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+    <div style={{ marginTop: 16, marginBottom: 20, border: `1px solid ${G200}`, borderRadius: 8, overflow: 'hidden', background: '#fff' }}>
+      <div style={{ background: G100, padding: '12px 16px', borderBottom: `1px solid ${G200}` }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: G700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           {resource} — {model === 'graduated' ? 'Graduated pricing' : 'Volume pricing'}
         </div>
       </div>
       <div style={{ background: '#fff' }}>
         {tiers.map((tier, i) => (
-          <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, padding: '10px 12px', borderBottom: i < tiers.length - 1 ? `1px solid ${G100}` : 'none', fontSize: 12 }}>
-            <div style={{ color: G700 }}>
+          <div key={i} style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr auto',
+            alignItems: 'center',
+            gap: 16,
+            padding: '14px 16px',
+            borderBottom: i < tiers.length - 1 ? `1px solid ${G100}` : 'none'
+          }}>
+            <div style={{ fontSize: 13, color: G900, fontWeight: 500 }}>
               {tier.min && tier.max ? `${tier.min} – ${tier.max} units` :
                tier.min && !tier.max ? `${tier.min}+ units` :
                !tier.min && tier.max ? `Up to ${tier.max} units` :
                'All units'}
             </div>
-            <div style={{ color: G900, fontWeight: 500, textAlign: 'right' }}>
+            <div style={{ fontSize: 16, color: G900, fontWeight: 700, letterSpacing: '-0.01em' }}>
               ${tier.price}/unit
             </div>
           </div>
         ))}
       </div>
       {model === 'graduated' && (
-        <div style={{ background: G50, padding: '8px 12px', borderTop: `1px solid ${G200}`, fontSize: 11, color: G500, lineHeight: 1.5 }}>
+        <div style={{ background: G50, padding: '10px 16px', borderTop: `1px solid ${G200}`, fontSize: 12, color: G500, lineHeight: 1.6 }}>
           Each unit is charged at the rate of the tier it falls in
         </div>
       )}
       {model === 'volume' && (
-        <div style={{ background: G50, padding: '8px 12px', borderTop: `1px solid ${G200}`, fontSize: 11, color: G500, lineHeight: 1.5 }}>
+        <div style={{ background: G50, padding: '10px 16px', borderTop: `1px solid ${G200}`, fontSize: 12, color: G500, lineHeight: 1.6 }}>
           All units are charged at the rate of the highest tier reached
         </div>
       )}
@@ -1326,29 +1443,57 @@ function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringN
         const hasBoth = comp.cycle==='both' && comp.price && comp.priceAnnual
         const monthly = comp.cycle!=='annual'
         const annual = comp.cycle!=='monthly'
+        const isMutable = comp.featureType === 'mutable'
+
+        // Format price with commas
+        const formatPrice = (price) => {
+          return parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+        }
 
         if (hasBoth) {
           // Show both prices with savings
           const savings = Math.round((1-(comp.priceAnnual/12)/comp.price)*100)
-          priceDisplay = (
-            <div>
+          if (isMutable) {
+            priceDisplay = (
               <div>
-                <span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${comp.price}</span>
-                <span style={{ fontSize:13, color:G500 }}>/{comp.featureType==='mutable'?`${comp.unitLabel}/`:''}mo</span>
+                <div>
+                  <span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${formatPrice(comp.price)}</span>
+                  <span style={{ fontSize:13, color:G500 }}> per {comp.unitLabel} / mo</span>
+                </div>
+                <div style={{ fontSize:14, color:G500, marginTop:6 }}>
+                  or ${formatPrice(comp.priceAnnual)} per {comp.unitLabel} / yr
+                  {savings > 0 && <span style={{ color:GREEN, marginLeft:8 }}>· save {savings}%</span>}
+                </div>
               </div>
-              <div style={{ fontSize:14, color:G500, marginTop:6 }}>
-                or ${comp.priceAnnual}/{comp.featureType==='mutable'?`${comp.unitLabel}/`:''}yr
-                {savings > 0 && <span style={{ color:GREEN, marginLeft:8 }}>· save {savings}%</span>}
+            )
+          } else {
+            priceDisplay = (
+              <div>
+                <div>
+                  <span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${formatPrice(comp.price)}</span>
+                  <span style={{ fontSize:13, color:G500 }}> / mo</span>
+                </div>
+                <div style={{ fontSize:14, color:G500, marginTop:6 }}>
+                  or ${formatPrice(comp.priceAnnual)} / yr
+                  {savings > 0 && <span style={{ color:GREEN, marginLeft:8 }}>· save {savings}%</span>}
+                </div>
               </div>
-            </div>
-          )
+            )
+          }
         } else if (monthly && comp.price) {
-          priceDisplay = <><span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${comp.price}</span><span style={{ fontSize:13, color:G500 }}>/{comp.featureType==='mutable'?`${comp.unitLabel}/`:''}mo</span></>
+          if (isMutable) {
+            priceDisplay = <><span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${formatPrice(comp.price)}</span><span style={{ fontSize:13, color:G500 }}> per {comp.unitLabel} / mo</span></>
+          } else {
+            priceDisplay = <><span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${formatPrice(comp.price)}</span><span style={{ fontSize:13, color:G500 }}> / mo</span></>
+          }
         } else if (annual && comp.priceAnnual) {
-          priceDisplay = <><span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${comp.priceAnnual}</span><span style={{ fontSize:13, color:G500 }}>/yr</span></>
+          if (isMutable) {
+            priceDisplay = <><span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${formatPrice(comp.priceAnnual)}</span><span style={{ fontSize:13, color:G500 }}> per {comp.unitLabel} / yr</span></>
+          } else {
+            priceDisplay = <><span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${formatPrice(comp.priceAnnual)}</span><span style={{ fontSize:13, color:G500 }}> / yr</span></>
+          }
         }
-        // Only show "Full product access" for base offerings, not add-ons
-        if (comp.whatGet==='access' && offeringType !== 'addon') includes.push('Full product access')
+        // Removed "Full product access" line
         if (comp.whatGet==='quantity' && comp.feature) {
           if (comp.featureType==='mutable') includes.push(`Priced per ${comp.unitLabel}`)
           if (comp.featureType==='metered' && comp.quantity) includes.push(`${comp.quantity} ${comp.feature} included / period`)
@@ -1377,37 +1522,16 @@ function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringN
         }
       })
 
-      // Show pricing prominently
-      if (simpleResources.length > 0 || complexResources.length > 0) {
-        priceDisplay = (
-          <div>
-            <div style={{ fontSize:16, fontWeight:600, color:G700, marginBottom:12 }}>Pay-as-you-go pricing</div>
-            {simpleResources.map((r, idx) => {
-              let priceText = ''
-              if (r.model === 'perunit' || r.model === 'per_unit') {
-                priceText = `$${r.price} per ${r.resource.toLowerCase()}`
-              } else if (r.model === 'block') {
-                priceText = `$${r.blockPrice} per ${r.blockSize} ${r.resource.toLowerCase()}`
-              }
-              return (
-                <div key={idx} style={{ marginBottom:8 }}>
-                  <div style={{ fontSize:13, fontWeight:500, color:G900 }}>{r.resource}</div>
-                  <div style={{ fontSize:20, fontWeight:700, color:G900, marginTop:2 }}>{priceText}</div>
-                </div>
-              )
-            })}
-            {complexResources.length > 0 && (
-              <div style={{ fontSize:13, fontWeight:500, color:G700, marginTop:8 }}>
-                {complexResources.map(r => r.resource).join(', ')} — see tiered pricing below
-              </div>
-            )}
-          </div>
-        )
-      } else {
-        priceDisplay = <span style={{ fontSize:16, fontWeight:600, color:G700 }}>Pay-as-you-go</span>
-      }
+      // Just show simple heading
+      priceDisplay = <div style={{ fontSize:18, fontWeight:600, color:G900, letterSpacing:'-0.01em' }}>Pay-as-you-go</div>
 
+      // Add pricing details to includes section
       includes.push('Billed monthly in arrears')
+
+      // Store resources to render in HOW IT WORKS section
+      if (simpleResources.length > 0 || complexResources.length > 0) {
+        includes.push('__PAYG_RESOURCES__') // Marker to render resources
+      }
     }
 
     if (comp.type==='prepaid') {
@@ -1473,23 +1597,69 @@ function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringN
     return (
       <div key={i} style={sep}>
         {isAddon && <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>ADD-ON: {typeLabel}</div>}
-        {priceDisplay && <div style={{ marginBottom:isFirst?16:12 }}>{priceDisplay}</div>}
-        {isFirst && includes.length>0 && <><Divider mt={0} mb={14}/><div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>HOW IT WORKS</div></>}
-        {isAddon && includes.length>0 && <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:10, marginBottom:10 }}>HOW IT WORKS</div>}
-        {includes.map((l,j)=><div key={j} style={{ fontSize:13, color:G900, marginBottom:8 }}><Check/>{l}</div>)}
-        {complexResources.length > 0 && (
-          <>
-            {complexResources.map((r, idx) => (
-              <PricingTable key={idx} resource={r.resource} model={r.model} tiers={r.tiers} />
-            ))}
-          </>
+        {priceDisplay && <div style={{ marginBottom:isFirst?20:14 }}>{priceDisplay}</div>}
+        {isFirst && includes.length>0 && <><Divider mt={0} mb={16}/><div style={{ fontSize:12, fontWeight:600, color:G700, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12 }}>HOW IT WORKS</div></>}
+        {isAddon && includes.length>0 && <div style={{ fontSize:12, fontWeight:600, color:G700, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:12, marginBottom:12 }}>HOW IT WORKS</div>}
+        {includes.map((l,j)=>{
+          // Render PAYG resources inline
+          if (l === '__PAYG_RESOURCES__' && comp.type === 'payg') {
+            const simpleRes = comp.resources?.filter(r => r.resource && r.model !== 'graduated' && r.model !== 'volume') || []
+            const complexRes = comp.resources?.filter(r => r.resource && (r.model === 'graduated' || r.model === 'volume')) || []
+            return (
+              <div key={j} style={{ marginTop:8, marginBottom:12 }}>
+                {simpleRes.map((r, idx) => {
+                  let priceText = ''
+                  if (r.model === 'perunit' || r.model === 'per_unit') {
+                    priceText = `$${r.price} per ${r.resource.toLowerCase()}`
+                  } else if (r.model === 'block') {
+                    priceText = `$${r.blockPrice} per ${r.blockSize} ${r.resource.toLowerCase()}`
+                  }
+                  return (
+                    <div key={idx} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 0', borderBottom: idx < simpleRes.length - 1 || complexRes.length > 0 ? `1px solid ${G200}` : 'none' }}>
+                      <div style={{ fontSize:13, color:G900 }}><Check/>{r.resource}</div>
+                      <div style={{ fontSize:14, fontWeight:600, color:G900 }}>{priceText}</div>
+                    </div>
+                  )
+                })}
+                {complexRes.map((r, idx) => (
+                  <div key={`complex-${idx}`} style={{ marginTop:16 }}>
+                    <PricingTable resource={r.resource} model={r.model} tiers={r.tiers} />
+                  </div>
+                ))}
+              </div>
+            )
+          }
+          return <div key={j} style={{ fontSize:13, color:G900, marginBottom:10, lineHeight:1.6 }}><Check/>{l}</div>
+        })}
+
+        {/* Note about entitlements for subscription and one-time */}
+        {(comp.type === 'subscription' || comp.type === 'onetime') && (
+          <div style={{
+            marginTop:includes.length > 0 ? 12 : 0,
+            padding:'8px 12px',
+            background:'#FFFBEB',
+            border:`1px solid #FDE68A`,
+            borderRadius:6,
+            fontSize:11,
+            color:'#92400E',
+            lineHeight:1.5
+          }}>
+            <strong>Note:</strong> This shows pricing only. Feature entitlements will be configured separately.
+          </div>
         )}
       </div>
     )
   }
 
   return (
-    <div style={{ border:`1px solid ${G200}`, borderRadius:8, padding:32, maxWidth:720 }}>
+    <div style={{
+      border:`1px solid ${G200}`,
+      borderRadius:12,
+      padding:32,
+      maxWidth:720,
+      background:'#fff',
+      boxShadow:'0 1px 3px rgba(0,0,0,0.05)'
+    }}>
       {/* Add-on badge */}
       {isAddon && (
         <div style={{ display:'inline-block', padding:'4px 8px', background:BL, border:`1px solid ${B}`, borderRadius:4, fontSize:10, fontWeight:600, color:B, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12 }}>
@@ -1498,7 +1668,7 @@ function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringN
       )}
 
       {/* Header */}
-      <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14 }}>
+      <div style={{ fontSize:12, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:16 }}>
         {isAddon ? displayName.toUpperCase() :
          components.length === 1 ? displayName.toUpperCase() : `${displayName.toUpperCase()} + ADD-ONS`}
       </div>
@@ -1514,8 +1684,21 @@ function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringN
           </div>
         </>
       )}
-      <Divider mt={16} mb={16}/>
-      <button style={{ width:'100%', padding:10, background:B, color:'#fff', border:'none', borderRadius:4, fontSize:13, fontWeight:500, cursor:'default', fontFamily:'inherit' }}>
+      <Divider mt={20} mb={20}/>
+      <button style={{
+        width:'100%',
+        padding:'12px 16px',
+        background:B,
+        color:'#fff',
+        border:'none',
+        borderRadius:6,
+        fontSize:14,
+        fontWeight:600,
+        cursor:'pointer',
+        fontFamily:'inherit',
+        transition:'all 0.15s',
+        boxShadow:'0 1px 2px rgba(0,0,0,0.05)'
+      }}>
         {components[0]?.type==='subscription'?'Subscribe':components[0]?.type==='payg'?'Enable':components[0]?.type==='mfc'?'Contact sales':'Buy now'}
       </button>
     </div>
@@ -1565,6 +1748,8 @@ export default function PricingPlayground() {
   const [sessionMutable, setSessionMutable] = useState([])
   const [editIndex, setEditIndex] = useState(null)
   const [editingComponent, setEditingComponent] = useState(null)
+  const [showExamples, setShowExamples] = useState(null) // null | 'examples' | 'scratch'
+  const [selectedExample, setSelectedExample] = useState(null)
   const formRef = useRef(null)
   const freeOptInRef = useRef(null)
 
@@ -1698,6 +1883,53 @@ export default function PricingPlayground() {
     mfc: <MFCForm onDone={handleStratDone} initialData={getInitialData('mfc')}/>,
   }
 
+  const handleReset = () => {
+    if (window.confirm('Reset all fields? This will clear everything you\'ve entered.')) {
+      setOfferingType(null)
+      setCompatibleWith([])
+      setCustomOfferings([])
+      setOfferingName('')
+      setIsFree(null)
+      setFreeOptIn(null)
+      setComponents([])
+      setActiveType(null)
+      setShowPicker(false)
+      setTrial(null)
+      setShowTrial(false)
+      setSessionMetered([])
+      setSessionMutable([])
+      setEditIndex(null)
+      setEditingComponent(null)
+      setShowExamples(null)
+      setSelectedExample(null)
+    }
+  }
+
+  const loadExample = (example) => {
+    const state = example.state
+
+    // Populate all state from example
+    setOfferingType(state.offeringType)
+    setOfferingName(state.offeringName)
+    setIsFree(state.isFree)
+    setFreeOptIn(state.freeOptIn)
+    setCompatibleWith(state.compatibleWith || [])
+    setCustomOfferings(state.customOfferings || [])
+    setComponents(state.components)
+    setTrial(state.trial)
+    setSessionMetered(state.sessionMetered || [])
+    setSessionMutable(state.sessionMutable || [])
+
+    // Mark that we've loaded an example
+    setSelectedExample(example.id)
+
+    // Don't show picker - go straight to editing view
+    setActiveType(null)
+    setShowPicker(false)
+    setEditIndex(null)
+    setEditingComponent(null)
+  }
+
   return (
     <div style={{ display:'flex', minHeight:'100vh', fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,sans-serif", background:'#fff', fontSize:13, width:'100%' }}>
       {/* ── Left panel ── */}
@@ -1709,42 +1941,146 @@ export default function PricingPlayground() {
           <span style={{ color:G900, fontWeight:500 }}>New offering</span>
         </div>
         <h1 style={{ fontSize:20, fontWeight:600, color:G900, margin:'0 0 4px', letterSpacing:'-0.02em' }}>Pricing strategy</h1>
-        <div style={{ fontSize:13, color:G500, marginBottom:32 }}>Configure how customers will be charged for this offering.</div>
+        <div style={{ fontSize:13, color:G500, marginBottom:24 }}>Configure how customers will be charged for this offering.</div>
 
-        {/* Step 0: Offering type */}
+        <Alert type="warning">
+          <strong>Note:</strong> This tool is illustrative and experimental. For a complete list of supported monetization strategies and capabilities, please check the <a href="https://docs.google.com/document/d/1UbLv9W8jCThbO7Ly13zrcFAYujRghpka0nLgMhwnkT8/edit?tab=t.f4cd87mzobtj" target="_blank" rel="noopener noreferrer" style={{ color:ORANGE, textDecoration:'underline' }}>on-rails billing definitions</a>.
+        </Alert>
+
+        {/* Step -1: See example or create your own - always visible */}
         <Fade>
-          <SectionQ>What are you creating?</SectionQ>
+          <SectionQ>How would you like to start?</SectionQ>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
             <SelCard
-              title="Complete offering"
-              desc="A purchasable product in its own right — like Docker Team or Build Cloud. You can attach optional add-ons to extend it."
-              selected={offeringType==='base'}
-              onClick={()=>setOfferingType('base')}
+              title="See an example"
+              desc="Explore pre-configured offerings to learn or use as a starting point."
+              selected={showExamples === 'examples'}
+              onClick={() => {
+                setShowExamples('examples')
+                setSelectedExample(null)
+                setOfferingType(null)
+              }}
             />
             <SelCard
-              title="Add-on"
-              desc="Supplements a base offering."
-              selected={offeringType==='addon'}
-              onClick={()=>setOfferingType('addon')}
+              title="Create your own"
+              desc="Build a new offering from scratch."
+              selected={showExamples === 'scratch'}
+              onClick={() => {
+                setShowExamples('scratch')
+                setSelectedExample(null)
+              }}
             />
           </div>
-          {offeringType && (
-            <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
-              {offeringType === 'base' && '→ You\'re creating a complete offering that can have multiple pricing components'}
-              {offeringType === 'addon' && '→ You\'re creating an add-on that depends on an existing offering'}
-            </div>
-          )}
         </Fade>
 
-        {/* Offering name */}
-        {offeringType && (
+        {/* Example offering picker */}
+        {showExamples === 'examples' && !selectedExample && (
+          <Fade key="examples">
+            <Divider mt={28} mb={28} />
+            <SectionQ>Choose an example to explore</SectionQ>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:12 }}>
+              {EXAMPLE_OFFERINGS.map(ex => (
+                <ExampleCard
+                  key={ex.id}
+                  example={ex}
+                  onClick={() => loadExample(ex)}
+                />
+              ))}
+            </div>
+            <div style={{
+              marginTop:20,
+              padding:'12px 16px',
+              background:BL,
+              border:`1px solid ${B}`,
+              borderRadius:6,
+              fontSize:12,
+              color:'#1E40AF',
+              lineHeight:1.6,
+              display:'flex',
+              alignItems:'start',
+              gap:8
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, marginTop:2 }}>
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 16v-4"></path>
+                <path d="M12 8h.01"></path>
+              </svg>
+              <div>
+                <strong>Tip:</strong> All examples are fully editable. Click any example to load it, then modify values, add components, or use it as a starting point for your own offering.
+              </div>
+            </div>
+          </Fade>
+        )}
+
+        {/* Step 0: Offering type - show if creating from scratch */}
+        {showExamples === 'scratch' && (
+          <Fade>
+            <Divider mt={28} mb={28} />
+            <SectionQ>What are you creating?</SectionQ>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+              <SelCard
+                title="Base offering"
+                desc="A purchasable offering like Docker Team or Offload. You can attach add-ons to extend it."
+                selected={offeringType==='base'}
+                onClick={()=>setOfferingType('base')}
+              />
+              <SelCard
+                title="Add-on"
+                desc="Supplements a base offering."
+                selected={offeringType==='addon'}
+                onClick={()=>setOfferingType('addon')}
+              />
+            </div>
+            {offeringType && (
+              <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
+                {offeringType === 'base' && '→ You\'re creating an offering that can have multiple pricing components'}
+                {offeringType === 'addon' && '→ You\'re creating an add-on that depends on an existing offering'}
+              </div>
+            )}
+          </Fade>
+        )}
+
+        {/* Offering name - show if type selected OR example loaded */}
+        {(offeringType || selectedExample) && (
           <Fade key="name">
             <Divider mt={28} mb={28} />
+            {selectedExample && (
+              <div style={{ marginBottom:16, fontSize:12, color:G500, display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Loaded from example: <strong>{EXAMPLE_OFFERINGS.find(e => e.id === selectedExample)?.name}</strong>
+                {' · '}
+                <button
+                  onClick={() => {
+                    // Allow switching to another example
+                    setSelectedExample(null)
+                    // Keep showExamples='examples' to show picker again
+                  }}
+                  style={{ background:'none', border:'none', color:B, textDecoration:'underline', cursor:'pointer', fontSize:12, fontFamily:'inherit' }}
+                >
+                  Load different example
+                </button>
+                {' · '}
+                <button
+                  onClick={() => {
+                    setSelectedExample(null)
+                    setShowExamples(null)
+                    // Reset all state
+                    handleReset()
+                  }}
+                  style={{ background:'none', border:'none', color:G500, textDecoration:'underline', cursor:'pointer', fontSize:12, fontFamily:'inherit' }}
+                >
+                  Start from scratch
+                </button>
+              </div>
+            )}
             <div style={{ marginBottom:28 }}>
               <Label hint="optional">{offeringType === 'addon' ? 'Add-on name' : 'Offering name'}</Label>
               <Input
                 type="text"
-                placeholder={offeringType === 'addon' ? 'e.g., Build minutes, Extra storage' : 'Your offering'}
+                placeholder={offeringType === 'addon' ? 'e.g., Build minutes, Extra storage' : 'e.g. Docker Team or Hardened Images Enterprise.'}
                 value={offeringName}
                 onChange={e=>setOfferingName(e.target.value)}
                 style={{ maxWidth:400 }}
@@ -1770,6 +2106,9 @@ export default function PricingPlayground() {
                   onChange={setCompatibleWith}
                   placeholder="Select offerings this add-on works with..."
                 />
+                <div style={{ fontSize:12, color:G400, marginTop:6, marginBottom:12 }}>
+                  Select which offerings this add-on can be purchased with.
+                </div>
 
                 {/* Add custom offering */}
                 <InlineCreate
@@ -1782,18 +2121,15 @@ export default function PricingPlayground() {
                     setCompatibleWith(prev => [...prev, customId])
                   }}
                 />
-
-                <Explainer>
-                  Select which offerings this add-on can be purchased with. Leave empty if it's compatible with all offerings.
-                </Explainer>
               </div>
             )}
           </Fade>
         )}
 
-        {/* Step 1: Free or Paid */}
-        {offeringType && (
+        {/* Step 1: Free or Paid - only show when creating from scratch */}
+        {showExamples === 'scratch' && offeringType && (
           <Fade key="freepaid">
+            <Divider mt={28} mb={28} />
             <SectionQ>Is this offering free or paid?</SectionQ>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
               <SelCard title="Free" desc="No purchase required." selected={isFree===true} onClick={()=>handleFree(true)}/>
@@ -1891,13 +2227,68 @@ export default function PricingPlayground() {
               ))}
             </div>
 
+            {/* Cancel button - only show when adding a new component (not editing) and already have components */}
+            {!activeType && components.length > 0 && editIndex === null && (
+              <div style={{ marginTop:12 }}>
+                <button
+                  onClick={() => {
+                    setShowPicker(false)
+                    setActiveType(null)
+                    setEditingComponent(null)
+                  }}
+                  style={{
+                    background:'none',
+                    border:`1px solid ${G200}`,
+                    borderRadius:4,
+                    padding:'8px 16px',
+                    fontSize:13,
+                    color:G500,
+                    cursor:'pointer',
+                    fontFamily:'inherit',
+                    transition:'all 0.15s'
+                  }}
+                  onMouseOver={(e) => { e.target.style.borderColor = G300; e.target.style.color = G700 }}
+                  onMouseOut={(e) => { e.target.style.borderColor = G200; e.target.style.color = G500 }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
             {/* Active form - shown below strategy cards */}
             {activeType && (
               <Fade key={`f-${activeType}-${editIndex}`}>
                 <div ref={formRef}>
                   <Divider mt={0} mb={16}/>
-                  <div style={{ fontSize:14, fontWeight:600, color:G900, marginBottom:16 }}>
-                    {STRATEGIES.find(s=>s.id===activeType)?.label}
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+                    <div style={{ fontSize:14, fontWeight:600, color:G900 }}>
+                      {STRATEGIES.find(s=>s.id===activeType)?.label}
+                    </div>
+                    {/* Cancel button - only show when adding new component (not editing) */}
+                    {editIndex === null && (
+                      <button
+                        onClick={() => {
+                          setActiveType(null)
+                          if (components.length > 0) {
+                            setShowPicker(false)
+                          }
+                        }}
+                        style={{
+                          background:'none',
+                          border:'none',
+                          fontSize:13,
+                          color:G400,
+                          cursor:'pointer',
+                          fontFamily:'inherit',
+                          textDecoration:'underline',
+                          padding:0
+                        }}
+                        onMouseOver={(e) => { e.target.style.color = G700 }}
+                        onMouseOut={(e) => { e.target.style.color = G400 }}
+                      >
+                        Cancel
+                      </button>
+                    )}
                   </div>
                   {stratForms[activeType]}
                 </div>
@@ -1966,6 +2357,45 @@ export default function PricingPlayground() {
         </div>
         <SummaryPanel offeringType={offeringType} compatibleWith={compatibleWith} customOfferings={customOfferings} offeringName={offeringName} isFree={isFree} freeOptIn={freeOptIn} components={components} trial={trial}/>
       </div>
+
+      {/* Sticky Reset Button */}
+      <button
+        onClick={handleReset}
+        style={{
+          position:'fixed',
+          bottom:24,
+          right:24,
+          background:'#fff',
+          border:`1px solid ${G200}`,
+          borderRadius:8,
+          padding:'10px 16px',
+          fontSize:13,
+          fontWeight:500,
+          color:G700,
+          cursor:'pointer',
+          fontFamily:'inherit',
+          display:'flex',
+          alignItems:'center',
+          gap:8,
+          boxShadow:'0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)',
+          transition:'all 0.2s',
+          zIndex:100
+        }}
+        onMouseOver={e => {
+          e.currentTarget.style.background = G50
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08)'
+        }}
+        onMouseOut={e => {
+          e.currentTarget.style.background = '#fff'
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)'
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+        Reset
+      </button>
     </div>
   )
 }

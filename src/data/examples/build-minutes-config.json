@@ -1,0 +1,89 @@
+{
+  "offeringType": "addon",
+  "compatibleWith": [
+    "team",
+    "business"
+  ],
+  "offeringName": "Build minutes",
+  "isFree": false,
+  "freeOptIn": null,
+  "components": [
+    {
+      "type": "prepaid",
+      "monetization_strategy": "prepaid",
+      "rateCards": [
+        {
+          "label": "Build minutes · pack · advance · one-time · 500 units",
+          "price": "$25 for 500 build minutes",
+          "packQty": 500,
+          "packPrice": 25,
+          "unitPrice": "0.0500",
+          "packIndex": 0
+        },
+        {
+          "label": "Build minutes · pack · advance · one-time · 1000 units",
+          "price": "$50 for 1000 build minutes",
+          "packQty": 1000,
+          "packPrice": 50,
+          "unitPrice": "0.0500",
+          "packIndex": 1
+        },
+        {
+          "label": "Build minutes · pack · advance · one-time · 5000 units",
+          "price": "$250 for 5000 build minutes",
+          "packQty": 5000,
+          "packPrice": 250,
+          "unitPrice": "0.0500",
+          "packIndex": 2
+        }
+      ],
+      "packs": [
+        {
+          "qty": 500,
+          "price": 25
+        },
+        {
+          "qty": 1000,
+          "price": 50
+        },
+        {
+          "qty": 5000,
+          "price": 250
+        }
+      ],
+      "expires": true,
+      "expiryMonths": 12,
+      "stackable": true,
+      "resource": "Build minutes",
+      "_original": {
+        "type": "prepaid",
+        "resource": "Build minutes",
+        "packs": [
+          {
+            "qty": "500",
+            "price": "25"
+          },
+          {
+            "qty": "1000",
+            "price": "50"
+          },
+          {
+            "qty": "5000",
+            "price": "250"
+          }
+        ],
+        "expires": true,
+        "expiryMonths": "12",
+        "stackable": true,
+        "monetization_strategy": "prepaid"
+      }
+    }
+  ],
+  "trial": null,
+  "_meta": {
+    "version": "1.0",
+    "exportedAt": "2026-03-06T12:58:00.836Z",
+    "transformedFormat": true,
+    "offeringType": "addon"
+  }
+}
