@@ -86,6 +86,23 @@ export default function Sidebar({ environment, onEnvironmentChange }) {
         </div>
       </div>
 
+      {/* Pricing Playground */}
+      <Link
+        to="/playground/pricing"
+        className={`w-full flex items-center gap-2 px-5 py-[7px] text-[13px] font-medium ${
+          isActive('/playground')
+            ? 'text-blue bg-blue-bg'
+            : 'text-g-500 hover:text-g-700 hover:bg-g-50'
+        } transition-all`}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <span>Pricing Playground</span>
+      </Link>
+
       {/* Reporting (disabled) */}
       <button
         disabled

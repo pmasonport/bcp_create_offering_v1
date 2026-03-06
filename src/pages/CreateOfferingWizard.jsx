@@ -1198,6 +1198,7 @@ export default function CreateOfferingWizard({ isAddon = false }) {
                 </div>
               )}
             </div>
+          </div>
           )
         })}
 
