@@ -3,12 +3,37 @@ import { Link } from 'react-router-dom'
 import { METERS } from '../data/meters'
 import { OFFERINGS } from '../data/offerings'
 import { getMutableAndMeteredFeatures } from '../data/helpers'
+import { transformComponentForExport } from '../utils/pricingTransform'
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────
 const B = '#2560FF', BL = '#EEF2FF', BBG = '#F8FAFF'
 const G50='#F9FAFB',G100='#F3F4F6',G200='#E5E7EB',G300='#D1D5DB'
 const G400='#9CA3AF',G500='#6B7280',G700='#374151',G900='#111827'
 const GREEN='#10B981'
+
+// ─── Utilities ──────────────────────────────────────────────────────────────
+// Helper to convert recurrence period to display text
+const recurrencePeriodToText = (period) => {
+  const map = {
+    hourly: 'hour',
+    daily: 'day',
+    weekly: 'week',
+    monthly: 'month',
+    annual: 'year'
+  }
+  return map[period] || period
+}
+
+const recurrencePeriodToAdverb = (period) => {
+  const map = {
+    hourly: 'hourly',
+    daily: 'daily',
+    weekly: 'weekly',
+    monthly: 'monthly',
+    annual: 'yearly'
+  }
+  return map[period] || period
+}
 
 // ─── Fade ───────────────────────────────────────────────────────────────────
 const Fade = ({ children }) => {
@@ -369,25 +394,31 @@ function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onC
                       )}
 
                       <SectionQ>How often does a customer's allowance refresh?</SectionQ>
-                      <SegmentedControl
-                        value={c.recurrenceMonthly}
-                        onChange={(v) => upd('recurrenceMonthly', v)}
-                        options={[
-                          { value: 'daily', label: 'Every day' },
-                          { value: 'monthly', label: 'Every month' }
-                        ]}
-                      />
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {['hourly', 'daily', 'weekly', 'monthly', 'annual'].map(period => (
+                          <Pill
+                            key={period}
+                            active={c.recurrenceMonthly === period}
+                            onClick={() => upd('recurrenceMonthly', period)}
+                          >
+                            {period.charAt(0).toUpperCase() + period.slice(1)}
+                          </Pill>
+                        ))}
+                      </div>
                       {c.recurrenceMonthly && (
                         <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
+                          {c.recurrenceMonthly === 'hourly' && '→ Allowance resets every hour'}
                           {c.recurrenceMonthly === 'daily' && '→ Allowance resets at midnight every day'}
+                          {c.recurrenceMonthly === 'weekly' && '→ Allowance resets every week'}
                           {c.recurrenceMonthly === 'monthly' && '→ Allowance resets on the same day each month'}
+                          {c.recurrenceMonthly === 'annual' && '→ Allowance resets once per year'}
                         </div>
                       )}
 
                       {c.recurrenceMonthly && (
                         <Fade key="monthly-amount">
                           <div style={{ marginTop: 16, marginBottom: 14 }}>
-                            <Label hint={`${c.feature} per purchase / ${c.recurrenceMonthly === 'daily' ? 'day' : 'month'}`}>
+                            <Label hint={`${c.feature} per purchase / ${recurrencePeriodToText(c.recurrenceMonthly)}`}>
                               {c.billingCycle === 'both' ? 'Included amount' : 'How much does one purchase include?'}
                             </Label>
                             <Input
@@ -404,7 +435,7 @@ function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onC
                       {c.includedAmountMonthly && (
                         <Fade key="monthly-price">
                           <div style={{ marginBottom: 14 }}>
-                            <Label hint={`/ month for ${c.includedAmountMonthly} ${c.feature} / ${c.recurrenceMonthly === 'daily' ? 'day' : 'month'}`}>
+                            <Label hint={`/ month for ${c.includedAmountMonthly} ${c.feature} / ${recurrencePeriodToText(c.recurrenceMonthly)}`}>
                               {c.billingCycle === 'both' ? 'Price' : 'Price ($)'}
                             </Label>
                             <Input
@@ -421,7 +452,7 @@ function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onC
                       {c.price && (
                         <Fade key="monthly-summary">
                           <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
-                            → ${c.price}/month includes {c.includedAmountMonthly} {c.feature}/{c.recurrenceMonthly === 'daily' ? 'day' : 'month'}
+                            → ${c.price}/month includes {c.includedAmountMonthly} {c.feature}/{recurrencePeriodToText(c.recurrenceMonthly)}
                           </div>
                         </Fade>
                       )}
@@ -438,27 +469,31 @@ function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onC
                       )}
 
                       <SectionQ>How often does a customer's allowance refresh?</SectionQ>
-                      <SegmentedControl
-                        value={c.recurrenceAnnual}
-                        onChange={(v) => upd('recurrenceAnnual', v)}
-                        options={[
-                          { value: 'daily', label: 'Every day' },
-                          { value: 'monthly', label: 'Every month' },
-                          { value: 'yearly', label: 'Once a year' }
-                        ]}
-                      />
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {['hourly', 'daily', 'weekly', 'monthly', 'annual'].map(period => (
+                          <Pill
+                            key={period}
+                            active={c.recurrenceAnnual === period}
+                            onClick={() => upd('recurrenceAnnual', period)}
+                          >
+                            {period.charAt(0).toUpperCase() + period.slice(1)}
+                          </Pill>
+                        ))}
+                      </div>
                       {c.recurrenceAnnual && (
                         <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
+                          {c.recurrenceAnnual === 'hourly' && '→ Allowance resets every hour'}
                           {c.recurrenceAnnual === 'daily' && '→ Allowance resets at midnight every day'}
+                          {c.recurrenceAnnual === 'weekly' && '→ Allowance resets every week'}
                           {c.recurrenceAnnual === 'monthly' && '→ Allowance resets on the same day each month'}
-                          {c.recurrenceAnnual === 'yearly' && '→ Allowance resets once per year on the anniversary date'}
+                          {c.recurrenceAnnual === 'annual' && '→ Allowance resets once per year on the anniversary date'}
                         </div>
                       )}
 
                       {c.recurrenceAnnual && (
                         <Fade key="annual-amount">
                           <div style={{ marginTop: 16, marginBottom: 14 }}>
-                            <Label hint={`${c.feature} per purchase / ${c.recurrenceAnnual === 'daily' ? 'day' : c.recurrenceAnnual === 'monthly' ? 'month' : 'year'}`}>
+                            <Label hint={`${c.feature} per purchase / ${recurrencePeriodToText(c.recurrenceAnnual)}`}>
                               {c.billingCycle === 'both' ? 'Included amount' : 'How much does one purchase include?'}
                             </Label>
                             <Input
@@ -475,7 +510,7 @@ function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onC
                       {c.includedAmountAnnual && (
                         <Fade key="annual-price">
                           <div style={{ marginBottom: 14 }}>
-                            <Label hint={`/ year for ${c.includedAmountAnnual} ${c.feature} / ${c.recurrenceAnnual === 'daily' ? 'day' : c.recurrenceAnnual === 'monthly' ? 'month' : 'year'}`}>
+                            <Label hint={`/ year for ${c.includedAmountAnnual} ${c.feature} / ${recurrencePeriodToText(c.recurrenceAnnual)}`}>
                               {c.billingCycle === 'both' ? 'Price' : 'Price ($)'}
                             </Label>
                             <Input
@@ -492,7 +527,7 @@ function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onC
                       {c.priceAnnual && (
                         <Fade key="annual-summary">
                           <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
-                            → ${c.priceAnnual}/year includes {c.includedAmountAnnual} {c.feature}/{c.recurrenceAnnual === 'daily' ? 'day' : c.recurrenceAnnual === 'monthly' ? 'month' : 'year'}
+                            → ${c.priceAnnual}/year includes {c.includedAmountAnnual} {c.feature}/{recurrencePeriodToText(c.recurrenceAnnual)}
                           </div>
                         </Fade>
                       )}
@@ -1002,34 +1037,102 @@ function TrialForm({ onDone }) {
 // ─── Completed Card ─────────────────────────────────────────────────────────
 function CompletedCard({ comp, onEdit, onRemove }) {
   const labels = { subscription:'Subscription', payg:'Pay-as-you-go', prepaid:'Prepaid w/ Top-Ups', onetime:'One-time Payment', mfc:'Min. Fee Commitment' }
+
   const meta = {
     subscription: () => {
       const isMeteredQuantity = comp.whatGet === 'quantity' && comp.featureType === 'metered' && comp.billingCycle
+
       if (isMeteredQuantity) {
-        const cycle = comp.billingCycle === 'both' ? 'monthly/annual' : comp.billingCycle
-        const price = comp.billingCycle === 'both' ? `$${comp.price}/$${comp.priceAnnual}` :
-                     comp.billingCycle === 'monthly' ? `$${comp.price}` : `$${comp.priceAnnual}`
-        return `Per ${comp.feature} · ${cycle} · ${price}`
+        // Metered subscription with quantity
+        const recurrence = comp.billingCycle === 'monthly'
+          ? recurrencePeriodToText(comp.recurrenceMonthly)
+          : recurrencePeriodToText(comp.recurrenceAnnual)
+
+        let priceText = ''
+        if (comp.billingCycle === 'both') {
+          priceText = `$${comp.price}/mo or $${comp.priceAnnual}/yr`
+        } else if (comp.billingCycle === 'monthly') {
+          priceText = `$${comp.price}/mo`
+        } else {
+          priceText = `$${comp.priceAnnual}/yr`
+        }
+
+        const includedAmount = comp.billingCycle === 'monthly' ? comp.includedAmountMonthly : comp.includedAmountAnnual
+        const overageText = comp.overage === 'hardstop' ? 'hard stop' : `$${comp.overageRate} overage`
+
+        return `${includedAmount} ${comp.feature}/${recurrence} • ${priceText} • ${overageText}`
       }
-      return `${comp.whatGet==='access'?'Flat fee':`Per ${comp.feature||'unit'}`} · ${comp.cycle||''} · $${comp.price||comp.priceAnnual||'?'}`
+
+      // Regular subscription (access or mutable quantity)
+      if (comp.whatGet === 'access') {
+        if (comp.cycle === 'both') {
+          return `Unlimited access • $${comp.price}/mo or $${comp.priceAnnual}/yr`
+        } else if (comp.cycle === 'monthly') {
+          return `Unlimited access • $${comp.price}/month`
+        } else {
+          return `Unlimited access • $${comp.priceAnnual}/year`
+        }
+      } else {
+        // Mutable quantity
+        const unit = comp.feature || 'unit'
+        if (comp.cycle === 'both') {
+          return `Per ${unit} • $${comp.price}/mo or $${comp.priceAnnual}/yr each`
+        } else if (comp.cycle === 'monthly') {
+          return `Per ${unit} • $${comp.price}/month each`
+        } else {
+          return `Per ${unit} • $${comp.priceAnnual}/year each`
+        }
+      }
     },
-    payg: () => comp.resources?.filter(r=>r.resource).map(r=>r.resource).join(', ') || '—',
-    prepaid: () => `${comp.resource} · ${comp.packs?.length} pack${comp.packs?.length===1?'':'s'}${comp.expires?` · ${comp.expiryMonths}mo expiry`:''}`,
-    onetime: () => `$${comp.price} · ${comp.timing==='advance'?'in advance':'in arrears'}`,
+
+    payg: () => {
+      const resources = comp.resources?.filter(r => r.resource) || []
+      if (resources.length === 0) return '—'
+
+      return resources.map(r => {
+        if (r.model === 'perunit' || r.model === 'per_unit') {
+          return `${r.resource} • $${r.price} per unit`
+        } else if (r.model === 'block') {
+          return `${r.resource} • $${r.blockPrice} per ${r.blockSize}`
+        } else if (r.model === 'graduated' || r.model === 'volume') {
+          const tierCount = r.tiers?.length || 0
+          const minPrice = r.tiers?.[0]?.price || '?'
+          const maxPrice = r.tiers?.[r.tiers.length - 1]?.price || '?'
+          return `${r.resource} • ${tierCount} tiers • $${minPrice}-$${maxPrice}`
+        }
+        return r.resource
+      }).join(' • ')
+    },
+
+    prepaid: () => {
+      const packCount = comp.packs?.length || 0
+      const minPrice = comp.packs?.[0]?.price ? `$${comp.packs[0].price}` : ''
+      const maxPrice = comp.packs?.[comp.packs.length - 1]?.price ? `$${comp.packs[comp.packs.length - 1].price}` : ''
+      const priceRange = minPrice && maxPrice && minPrice !== maxPrice ? ` • ${minPrice}-${maxPrice}` : minPrice ? ` • ${minPrice}` : ''
+      const expiry = comp.expires ? ` • ${comp.expiryMonths}mo expiry` : ' • No expiry'
+      return `${comp.resource} • ${packCount} pack${packCount === 1 ? '' : 's'}${priceRange}${expiry}`
+    },
+
+    onetime: () => {
+      const timingText = comp.timing === 'advance' ? 'Paid in advance' : 'Paid in arrears'
+      return `One-time fee • $${comp.price} • ${timingText}`
+    },
+
     mfc: () => {
-      const activeOfferings = OFFERINGS.filter(o => o.status === 'active')
-      return comp.offerings?.map(id => activeOfferings.find(o=>o.id===id)?.name).filter(Boolean).join(', ') || '—'
+      const offeringCount = comp.offerings?.length || 0
+      const discountCount = Object.keys(comp.discounts || {}).filter(k => comp.discounts[k]).length
+      return `Minimum commitment • ${offeringCount} offering${offeringCount === 1 ? '' : 's'} • ${discountCount} discount${discountCount === 1 ? '' : 's'}`
     },
   }[comp.type]?.() || ''
 
   return (
-    <div style={{ border:`1px solid ${G200}`, borderRadius:6, padding:'10px 14px', background:G50, marginBottom:8, display:'flex', alignItems:'center', gap:12 }}>
+    <div style={{ border:`1px solid ${G200}`, borderRadius:6, padding:'10px 14px', background:'#fff', marginBottom:8, display:'flex', alignItems:'center', gap:12 }}>
       <div style={{ width:22, height:22, borderRadius:'50%', background:BL, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
         <svg viewBox="0 0 13 13" width="10" height="10"><polyline points="1.5,6.5 5,10 11.5,3" fill="none" stroke={B} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
       </div>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontSize:13, fontWeight:600, color:G900 }}>{labels[comp.type]}</div>
-        <div style={{ fontSize:11, color:G400, fontFamily:'monospace', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{meta}</div>
+        <div style={{ fontSize:12, color:G500, marginTop:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{meta}</div>
       </div>
       <div style={{ display:'flex', gap:4, flexShrink:0 }}>
         <button onClick={onEdit} style={{ background:'none', border:`1px solid ${G200}`, borderRadius:3, fontSize:11, color:G500, cursor:'pointer', padding:'3px 8px', fontFamily:'inherit' }}>Edit</button>
@@ -1078,10 +1181,14 @@ function PricingTable({ resource, model, tiers }) {
 }
 
 // ─── Summary Panel ──────────────────────────────────────────────────────────
-function SummaryPanel({ offeringName, isFree, freeOptIn, components, trial }) {
+function SummaryPanel({ offeringType, compatibleWith, offeringName, isFree, freeOptIn, components, trial }) {
   const Check = () => <span style={{ color:GREEN, marginRight:8 }}>✓</span>
   const activeOfferings = OFFERINGS.filter(o => o.status === 'active')
   const displayName = offeringName.trim() || 'Your offering'
+  const isAddon = offeringType === 'addon'
+  const requiredOfferings = compatibleWith?.length > 0
+    ? compatibleWith.map(id => activeOfferings.find(o => o.id === id)).filter(Boolean)
+    : []
 
   if (isFree===null) return (
     <div style={{ textAlign:'center', padding:'60px 16px' }}>
@@ -1129,6 +1236,12 @@ function SummaryPanel({ offeringName, isFree, freeOptIn, components, trial }) {
     let includes = []
     let cta = 'Buy now'
 
+    // Add requirements for add-ons at the top of includes
+    if (isFirst && offeringType === 'addon' && requiredOfferings.length > 0) {
+      const offeringNames = requiredOfferings.map(o => o.name).join(', ')
+      includes.push(`Requires one of: ${offeringNames}`)
+    }
+
     if (comp.type==='subscription') {
       cta = 'Subscribe'
       const isMeteredQuantity = comp.whatGet === 'quantity' && comp.featureType === 'metered' && comp.billingCycle
@@ -1140,8 +1253,8 @@ function SummaryPanel({ offeringName, isFree, freeOptIn, components, trial }) {
         if (hasBoth) {
           // Show both prices with savings and descriptions
           const savings = Math.round((1-(comp.priceAnnual/12)/comp.price)*100)
-          const recurrenceMonthly = comp.recurrenceMonthly === 'daily' ? 'day' : 'month'
-          const recurrenceAnnual = comp.recurrenceAnnual === 'daily' ? 'day' : comp.recurrenceAnnual === 'monthly' ? 'month' : 'year'
+          const recurrenceMonthly = recurrencePeriodToText(comp.recurrenceMonthly)
+          const recurrenceAnnual = recurrencePeriodToText(comp.recurrenceAnnual)
           priceDisplay = (
             <div>
               <div>
@@ -1161,7 +1274,7 @@ function SummaryPanel({ offeringName, isFree, freeOptIn, components, trial }) {
             </div>
           )
         } else if (comp.billingCycle === 'monthly' && comp.price) {
-          const recurrence = comp.recurrenceMonthly === 'daily' ? 'day' : 'month'
+          const recurrence = recurrencePeriodToText(comp.recurrenceMonthly)
           priceDisplay = (
             <div>
               <div>
@@ -1174,7 +1287,7 @@ function SummaryPanel({ offeringName, isFree, freeOptIn, components, trial }) {
             </div>
           )
         } else if (comp.billingCycle === 'annual' && comp.priceAnnual) {
-          const recurrence = comp.recurrenceAnnual === 'daily' ? 'day' : comp.recurrenceAnnual === 'monthly' ? 'month' : 'year'
+          const recurrence = recurrencePeriodToText(comp.recurrenceAnnual)
           priceDisplay = (
             <div>
               <div>
@@ -1190,14 +1303,14 @@ function SummaryPanel({ offeringName, isFree, freeOptIn, components, trial }) {
 
         // Describe the metered quantity subscription details
         if (hasBoth) {
-          const recurrenceMonthly = comp.recurrenceMonthly === 'daily' ? 'daily' : 'monthly'
-          const recurrenceAnnual = comp.recurrenceAnnual === 'daily' ? 'daily' : comp.recurrenceAnnual === 'monthly' ? 'monthly' : 'yearly'
+          const recurrenceMonthly = recurrencePeriodToAdverb(comp.recurrenceMonthly)
+          const recurrenceAnnual = recurrencePeriodToAdverb(comp.recurrenceAnnual)
           includes.push(`For monthly billing, allowance refreshes ${recurrenceMonthly}`)
           includes.push(`For annual billing, allowance refreshes ${recurrenceAnnual}`)
         } else {
           const recurrence = comp.billingCycle === 'monthly'
-            ? (comp.recurrenceMonthly === 'daily' ? 'daily' : 'monthly')
-            : (comp.recurrenceAnnual === 'daily' ? 'daily' : comp.recurrenceAnnual === 'monthly' ? 'monthly' : 'yearly')
+            ? recurrencePeriodToAdverb(comp.recurrenceMonthly)
+            : recurrencePeriodToAdverb(comp.recurrenceAnnual)
           includes.push(`Allowance refreshes ${recurrence}`)
         }
 
@@ -1233,7 +1346,8 @@ function SummaryPanel({ offeringName, isFree, freeOptIn, components, trial }) {
         } else if (annual && comp.priceAnnual) {
           priceDisplay = <><span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${comp.priceAnnual}</span><span style={{ fontSize:13, color:G500 }}>/yr</span></>
         }
-        if (comp.whatGet==='access') includes.push('Full product access')
+        // Only show "Full product access" for base offerings, not add-ons
+        if (comp.whatGet==='access' && offeringType !== 'addon') includes.push('Full product access')
         if (comp.whatGet==='quantity' && comp.feature) {
           if (comp.featureType==='mutable') includes.push(`Priced per ${comp.unitLabel}`)
           if (comp.featureType==='metered' && comp.quantity) includes.push(`${comp.quantity} ${comp.feature} included / period`)
@@ -1248,7 +1362,6 @@ function SummaryPanel({ offeringName, isFree, freeOptIn, components, trial }) {
 
     if (comp.type==='payg') {
       cta = 'Enable'
-      priceDisplay = <span style={{ fontSize:16, fontWeight:600, color:G700 }}>Pay-as-you-go</span>
 
       // Separate simple and complex pricing models
       const simpleResources = []
@@ -1263,20 +1376,70 @@ function SummaryPanel({ offeringName, isFree, freeOptIn, components, trial }) {
         }
       })
 
-      // Show simple pricing models as checkmarks
-      simpleResources.forEach(r => {
-        let p = ''
-        if (r.model==='perunit') p = `$${r.price} per unit`
-        else if (r.model==='block') p = `$${r.blockPrice} per ${r.blockSize} units`
-        includes.push(`${r.resource}: ${p}`)
-      })
+      // Show pricing prominently
+      if (simpleResources.length > 0 || complexResources.length > 0) {
+        priceDisplay = (
+          <div>
+            <div style={{ fontSize:16, fontWeight:600, color:G700, marginBottom:12 }}>Pay-as-you-go pricing</div>
+            {simpleResources.map((r, idx) => {
+              let priceText = ''
+              if (r.model === 'perunit' || r.model === 'per_unit') {
+                priceText = `$${r.price} per ${r.resource.toLowerCase()}`
+              } else if (r.model === 'block') {
+                priceText = `$${r.blockPrice} per ${r.blockSize} ${r.resource.toLowerCase()}`
+              }
+              return (
+                <div key={idx} style={{ marginBottom:8 }}>
+                  <div style={{ fontSize:13, fontWeight:500, color:G900 }}>{r.resource}</div>
+                  <div style={{ fontSize:20, fontWeight:700, color:G900, marginTop:2 }}>{priceText}</div>
+                </div>
+              )
+            })}
+            {complexResources.length > 0 && (
+              <div style={{ fontSize:13, fontWeight:500, color:G700, marginTop:8 }}>
+                {complexResources.map(r => r.resource).join(', ')} — see tiered pricing below
+              </div>
+            )}
+          </div>
+        )
+      } else {
+        priceDisplay = <span style={{ fontSize:16, fontWeight:600, color:G700 }}>Pay-as-you-go</span>
+      }
 
-      includes.push('Billed monthly · In arrears')
+      includes.push('Billed monthly in arrears')
     }
 
     if (comp.type==='prepaid') {
-      priceDisplay = <span style={{ fontSize:16, fontWeight:600, color:G700 }}>Prepaid packs</span>
-      comp.packs?.filter(p=>p.qty&&p.price).forEach(p => includes.push(`${p.qty} ${comp.resource} — $${p.price}`))
+      const packs = comp.packs?.filter(p=>p.qty&&p.price) || []
+
+      if (packs.length > 0) {
+        priceDisplay = (
+          <div>
+            <div style={{ fontSize:16, fontWeight:600, color:G700, marginBottom:12 }}>{comp.resource} packs</div>
+            <div style={{ display:'grid', gridTemplateColumns: packs.length <= 3 ? `repeat(${packs.length}, 1fr)` : 'repeat(3, 1fr)', gap:12 }}>
+              {packs.map((pack, idx) => {
+                const unitPrice = (parseFloat(pack.price) / parseInt(pack.qty)).toFixed(4)
+                return (
+                  <div key={idx} style={{ border:`1px solid ${G200}`, borderRadius:6, padding:'12px 14px', background:'#fff' }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>
+                      {pack.qty} {comp.resource}
+                    </div>
+                    <div style={{ fontSize:24, fontWeight:700, color:G900, letterSpacing:'-0.01em' }}>
+                      ${pack.price}
+                    </div>
+                    <div style={{ fontSize:11, color:G400, marginTop:4 }}>
+                      ${unitPrice} per unit
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      } else {
+        priceDisplay = <span style={{ fontSize:16, fontWeight:600, color:G700 }}>Prepaid packs</span>
+      }
+
       if (comp.expires) includes.push(`Credits expire after ${comp.expiryMonths} months`)
       if (comp.stackable===true) includes.push('Balances stack across purchases')
       if (comp.stackable===false) includes.push('New purchase replaces remaining balance')
@@ -1326,9 +1489,19 @@ function SummaryPanel({ offeringName, isFree, freeOptIn, components, trial }) {
 
   return (
     <div style={{ border:`1px solid ${G200}`, borderRadius:8, padding:32, maxWidth:720 }}>
+      {/* Add-on badge */}
+      {isAddon && (
+        <div style={{ display:'inline-block', padding:'4px 8px', background:BL, border:`1px solid ${B}`, borderRadius:4, fontSize:10, fontWeight:600, color:B, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12 }}>
+          Add-on
+        </div>
+      )}
+
+      {/* Header */}
       <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14 }}>
-        {components.length === 1 ? displayName.toUpperCase() : `${displayName.toUpperCase()} + ADD-ONS`}
+        {isAddon ? displayName.toUpperCase() :
+         components.length === 1 ? displayName.toUpperCase() : `${displayName.toUpperCase()} + ADD-ONS`}
       </div>
+
       {components.map((comp, i) => renderComponent(comp, i, components.length))}
       {trial && (
         <>
@@ -1350,14 +1523,35 @@ function SummaryPanel({ offeringName, isFree, freeOptIn, components, trial }) {
 
 // ─── Export ─────────────────────────────────────────────────────────────────
 function doExport(config) {
-  const blob = new Blob([JSON.stringify(config, null, 2)], { type:'application/json' })
+  // Transform components to data model-aligned format
+  const payload = {
+    ...config,
+    components: config.components.map(transformComponentForExport),
+    _meta: {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      transformedFormat: true,
+      offeringType: config.offeringType || 'base' // 'base' or 'addon'
+    }
+  }
+
+  // Generate filename from offering name
+  const filename = (config.offeringName || 'pricing-config')
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '') + '-config.json'
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' })
   const url = URL.createObjectURL(blob)
-  const a = document.createElement('a'); a.href = url; a.download = 'pricing-config.json'; a.click()
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click()
   URL.revokeObjectURL(url)
 }
 
 // ─── Main Wizard ─────────────────────────────────────────────────────────────
 export default function PricingPlayground() {
+  const [offeringType, setOfferingType] = useState(null) // 'base' or 'addon'
+  const [compatibleWith, setCompatibleWith] = useState([]) // Array of offering IDs for add-ons
+  const [customOfferings, setCustomOfferings] = useState([]) // Custom offerings created by user
   const [offeringName, setOfferingName] = useState('')
   const [isFree, setIsFree] = useState(null)
   const [freeOptIn, setFreeOptIn] = useState(null) // 'automatic' or 'optin'
@@ -1516,28 +1710,96 @@ export default function PricingPlayground() {
         <h1 style={{ fontSize:20, fontWeight:600, color:G900, margin:'0 0 4px', letterSpacing:'-0.02em' }}>Pricing strategy</h1>
         <div style={{ fontSize:13, color:G500, marginBottom:32 }}>Configure how customers will be charged for this offering.</div>
 
-        {/* Offering name */}
+        {/* Step 0: Offering type */}
         <Fade>
-          <div style={{ marginBottom:28 }}>
-            <Label hint="optional">Offering name</Label>
-            <Input
-              type="text"
-              placeholder="Your offering"
-              value={offeringName}
-              onChange={e=>setOfferingName(e.target.value)}
-              style={{ maxWidth:400 }}
+          <SectionQ>What are you creating?</SectionQ>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+            <SelCard
+              title="Complete offering"
+              desc="A purchasable product in its own right — like Docker Team or Build Cloud. You can attach optional add-ons to extend it."
+              selected={offeringType==='base'}
+              onClick={()=>setOfferingType('base')}
+            />
+            <SelCard
+              title="Add-on"
+              desc="Supplements a base offering."
+              selected={offeringType==='addon'}
+              onClick={()=>setOfferingType('addon')}
             />
           </div>
+          {offeringType && (
+            <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
+              {offeringType === 'base' && '→ You\'re creating a complete offering that can have multiple pricing components'}
+              {offeringType === 'addon' && '→ You\'re creating an add-on that depends on an existing offering'}
+            </div>
+          )}
         </Fade>
 
-        {/* Step 1 */}
-        <Fade>
-          <SectionQ>Is this offering free or paid?</SectionQ>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            <SelCard title="Free" desc="No purchase required." selected={isFree===true} onClick={()=>handleFree(true)}/>
-            <SelCard title="Paid" desc="This offering has a cost — customers may be charged before, or after use." selected={isFree===false} onClick={()=>handleFree(false)}/>
-          </div>
-        </Fade>
+        {/* Offering name */}
+        {offeringType && (
+          <Fade key="name">
+            <Divider mt={28} mb={28} />
+            <div style={{ marginBottom:28 }}>
+              <Label hint="optional">{offeringType === 'addon' ? 'Add-on name' : 'Offering name'}</Label>
+              <Input
+                type="text"
+                placeholder={offeringType === 'addon' ? 'e.g., Build minutes, Extra storage' : 'Your offering'}
+                value={offeringName}
+                onChange={e=>setOfferingName(e.target.value)}
+                style={{ maxWidth:400 }}
+              />
+            </div>
+
+            {/* Compatible offerings for add-ons */}
+            {offeringType === 'addon' && (
+              <div style={{ marginBottom:28 }}>
+                <Label>Compatible with</Label>
+                <MultiSelect
+                  items={[
+                    // Docker offerings
+                    ...OFFERINGS.filter(o => ['personal', 'pro', 'team', 'business'].includes(o.id))
+                      .map(o => ({ id: o.id, name: o.name })),
+                    // Hardened Images offerings
+                    ...OFFERINGS.filter(o => ['dhi-free', 'dhi-sel', 'dhi-ent-r', 'dhi-ent-f'].includes(o.id))
+                      .map(o => ({ id: o.id, name: o.name })),
+                    // Custom offerings
+                    ...customOfferings.map(o => ({ id: o.id, name: o.name }))
+                  ]}
+                  selected={compatibleWith}
+                  onChange={setCompatibleWith}
+                  placeholder="Select offerings this add-on works with..."
+                />
+
+                {/* Add custom offering */}
+                <AddItemInline
+                  label="+ Add custom offering"
+                  fields={[{ key: 'name', placeholder: 'Offering name' }]}
+                  onAdd={(vals) => {
+                    const customId = `custom-${Date.now()}`
+                    const newOffering = { id: customId, name: vals.name }
+                    setCustomOfferings(prev => [...prev, newOffering])
+                    setCompatibleWith(prev => [...prev, customId])
+                  }}
+                />
+
+                <Explainer>
+                  Select which offerings this add-on can be purchased with. Leave empty if it's compatible with all offerings.
+                </Explainer>
+              </div>
+            )}
+          </Fade>
+        )}
+
+        {/* Step 1: Free or Paid */}
+        {offeringType && (
+          <Fade key="freepaid">
+            <SectionQ>Is this offering free or paid?</SectionQ>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+              <SelCard title="Free" desc="No purchase required." selected={isFree===true} onClick={()=>handleFree(true)}/>
+              <SelCard title="Paid" desc="This offering has a cost — customers may be charged before, or after use." selected={isFree===false} onClick={()=>handleFree(false)}/>
+            </div>
+          </Fade>
+        )}
 
         {/* Step 1b - Free opt-in behavior */}
         {isFree===true && (
@@ -1567,9 +1829,50 @@ export default function PricingPlayground() {
         {isFree===false && components.length>0 && (
           <Fade key={`c${components.length}`}>
             <Divider />
-            {components.map((comp,i)=>(
-              <CompletedCard key={i} comp={comp} onEdit={()=>handleEdit(i)} onRemove={()=>setComponents(p=>p.filter((_,j)=>j!==i))}/>
-            ))}
+            {offeringType === 'addon' ? (
+              /* Standalone add-on - no section headers */
+              <div>
+                <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>
+                  ADD-ON
+                </div>
+                <CompletedCard
+                  comp={components[0]}
+                  onEdit={()=>handleEdit(0)}
+                  onRemove={()=>setComponents(p=>p.filter((_,j)=>j!==0))}
+                />
+              </div>
+            ) : (
+              /* Base offering with optional add-ons */
+              <>
+                <div style={{ marginBottom: components.length > 1 ? 16 : 0 }}>
+                  <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>
+                    BASE OFFERING
+                  </div>
+                  <CompletedCard
+                    comp={components[0]}
+                    onEdit={()=>handleEdit(0)}
+                    onRemove={()=>setComponents(p=>p.filter((_,j)=>j!==0))}
+                  />
+                </div>
+
+                {/* Add-ons */}
+                {components.length > 1 && (
+                  <div style={{ background:G50, border:`1px solid ${G100}`, borderRadius:6, padding:12, marginTop:4 }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>
+                      ADD-ONS
+                    </div>
+                    {components.slice(1).map((comp,i)=>(
+                      <CompletedCard
+                        key={i+1}
+                        comp={comp}
+                        onEdit={()=>handleEdit(i+1)}
+                        onRemove={()=>setComponents(p=>p.filter((_,j)=>j!==i+1))}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </Fade>
         )}
 
@@ -1577,7 +1880,10 @@ export default function PricingPlayground() {
         {isFree===false && showPicker && (
           <Fade key="picker">
             <Divider />
-            <SectionQ>{components.length === 0 ? 'Choose a pricing strategy' : 'Choose add-on pricing strategy'}</SectionQ>
+            <SectionQ>
+              {offeringType === 'addon' ? 'Choose pricing strategy' :
+               components.length === 0 ? 'Choose a pricing strategy' : 'Choose add-on pricing strategy'}
+            </SectionQ>
             <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom: activeType ? 20 : 0 }}>
               {STRATEGIES.map(s=>(
                 <SelCard key={s.id} title={s.label} desc={s.desc} selected={activeType===s.id} onClick={()=>setActiveType(s.id)}/>
@@ -1604,8 +1910,11 @@ export default function PricingPlayground() {
           <Fade key="post">
             <Divider />
             <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:16 }}>
-              <BtnGhost onClick={()=>{ setShowPicker(true); setShowTrial(false) }}>Add an add-on</BtnGhost>
-              {!trial && !showTrial && (
+              {/* Only show "Add an add-on" if this is a base offering or if no components added yet */}
+              {offeringType === 'base' && (
+                <BtnGhost onClick={()=>{ setShowPicker(true); setShowTrial(false) }}>Add an add-on</BtnGhost>
+              )}
+              {offeringType === 'base' && !trial && !showTrial && (
                 <BtnGhost onClick={()=>setShowTrial(true)} style={{ borderColor:G200, color:G500 }}>Add free trial</BtnGhost>
               )}
             </div>
@@ -1626,7 +1935,7 @@ export default function PricingPlayground() {
             <Divider mt={20} mb={0}/>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:20 }}>
               <div style={{ fontSize:12, color:G500 }}>Export configuration as JSON</div>
-              <button onClick={()=>doExport({ offeringName: offeringName.trim() || 'Your offering', isFree, freeOptIn, components, trial })} style={{ background:G900, color:'#fff', border:'none', borderRadius:4, padding:'8px 14px', fontSize:12, fontWeight:500, cursor:'pointer', display:'flex', alignItems:'center', gap:6, fontFamily:'inherit' }}>
+              <button onClick={()=>doExport({ offeringType, compatibleWith: offeringType === 'addon' ? compatibleWith : undefined, offeringName: offeringName.trim() || 'Your offering', isFree, freeOptIn, components, trial })} style={{ background:G900, color:'#fff', border:'none', borderRadius:4, padding:'8px 14px', fontSize:12, fontWeight:500, cursor:'pointer', display:'flex', alignItems:'center', gap:6, fontFamily:'inherit' }}>
                 <svg viewBox="0 0 15 15" width="11" height="11"><path d="M7.5 1v9m-3-3 3 3 3-3M2 11v3h11v-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 Export config
               </button>
@@ -1639,7 +1948,7 @@ export default function PricingPlayground() {
             <Divider />
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div style={{ fontSize:12, color:G500 }}>Export configuration as JSON</div>
-              <button onClick={()=>doExport({ offeringName: offeringName.trim() || 'Your offering', isFree, freeOptIn, components:[], trial:null })} style={{ background:G900, color:'#fff', border:'none', borderRadius:4, padding:'8px 14px', fontSize:12, fontWeight:500, cursor:'pointer', display:'flex', alignItems:'center', gap:6, fontFamily:'inherit' }}>
+              <button onClick={()=>doExport({ offeringType, compatibleWith: offeringType === 'addon' ? compatibleWith : undefined, offeringName: offeringName.trim() || 'Your offering', isFree, freeOptIn, components:[], trial:null })} style={{ background:G900, color:'#fff', border:'none', borderRadius:4, padding:'8px 14px', fontSize:12, fontWeight:500, cursor:'pointer', display:'flex', alignItems:'center', gap:6, fontFamily:'inherit' }}>
                 <svg viewBox="0 0 15 15" width="11" height="11"><path d="M7.5 1v9m-3-3 3 3 3-3M2 11v3h11v-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 Export config
               </button>
@@ -1654,7 +1963,7 @@ export default function PricingPlayground() {
           <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>CUSTOMER VIEW</div>
           <div style={{ fontSize:12, color:G400, lineHeight:1.6 }}>This is how customers will see and understand this offering. The right panel is the deliverable.</div>
         </div>
-        <SummaryPanel offeringName={offeringName} isFree={isFree} freeOptIn={freeOptIn} components={components} trial={trial}/>
+        <SummaryPanel offeringType={offeringType} compatibleWith={compatibleWith} offeringName={offeringName} isFree={isFree} freeOptIn={freeOptIn} components={components} trial={trial}/>
       </div>
     </div>
   )
