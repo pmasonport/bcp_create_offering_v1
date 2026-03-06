@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import Topbar from './components/Topbar'
 import Sidebar from './components/Sidebar'
 import Drawer from './components/Drawer'
@@ -16,8 +16,12 @@ import PricingPlayground from './pages/PricingPlayground'
 function App() {
   const [environment, setEnvironment] = useState('staging')
   const [drawerContent, setDrawerContent] = useState(null)
+  const location = useLocation()
 
   const closeDrawer = () => setDrawerContent(null)
+
+  // Check if current route should use full width
+  const isFullWidth = location.pathname === '/playground/pricing'
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -28,7 +32,7 @@ function App() {
           onEnvironmentChange={setEnvironment}
         />
         <main className="flex-1 ml-[200px] bg-g-50 min-h-screen">
-          <div className="max-w-[960px] px-10 pt-4 pb-40">
+          <div className={isFullWidth ? '' : 'max-w-[960px] px-10 pt-4 pb-40'}>
             <ScrollToTop />
             <Routes>
               <Route path="/" element={<OfferingsIndex />} />
