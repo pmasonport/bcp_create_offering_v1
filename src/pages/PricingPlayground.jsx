@@ -1181,16 +1181,17 @@ function PricingTable({ resource, model, tiers }) {
 }
 
 // ─── Summary Panel ──────────────────────────────────────────────────────────
-function SummaryPanel({ offeringType, compatibleWith, offeringName, isFree, freeOptIn, components, trial }) {
+function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringName, isFree, freeOptIn, components, trial }) {
   const Check = () => <span style={{ color:GREEN, marginRight:8 }}>✓</span>
   const activeOfferings = OFFERINGS.filter(o => o.status === 'active')
   const displayName = offeringName.trim() || 'Your offering'
   const isAddon = offeringType === 'addon'
+  const allOfferings = [...activeOfferings, ...(customOfferings || [])]
   const requiredOfferings = compatibleWith?.length > 0
-    ? compatibleWith.map(id => activeOfferings.find(o => o.id === id)).filter(Boolean)
+    ? compatibleWith.map(id => allOfferings.find(o => o.id === id)).filter(Boolean)
     : []
 
-  if (isFree===null) return (
+  if (!offeringType || isFree===null) return (
     <div style={{ textAlign:'center', padding:'60px 16px' }}>
       <div style={{ fontSize:28, marginBottom:12, opacity:0.3 }}>◻</div>
       <div style={{ fontSize:13, color:G400, lineHeight:1.8 }}>Build your pricing on the left.<br/>The customer view will appear here.</div>
@@ -1771,7 +1772,7 @@ export default function PricingPlayground() {
                 />
 
                 {/* Add custom offering */}
-                <AddItemInline
+                <InlineCreate
                   label="+ Add custom offering"
                   fields={[{ key: 'name', placeholder: 'Offering name' }]}
                   onAdd={(vals) => {
@@ -1963,7 +1964,7 @@ export default function PricingPlayground() {
           <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>CUSTOMER VIEW</div>
           <div style={{ fontSize:12, color:G400, lineHeight:1.6 }}>This is how customers will see and understand this offering. The right panel is the deliverable.</div>
         </div>
-        <SummaryPanel offeringType={offeringType} compatibleWith={compatibleWith} offeringName={offeringName} isFree={isFree} freeOptIn={freeOptIn} components={components} trial={trial}/>
+        <SummaryPanel offeringType={offeringType} compatibleWith={compatibleWith} customOfferings={customOfferings} offeringName={offeringName} isFree={isFree} freeOptIn={freeOptIn} components={components} trial={trial}/>
       </div>
     </div>
   )
