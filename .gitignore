@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Working files and planning docs
+plan.md
+pricing-step-plan.md
+claude-code-prompt.md
+create-offering-structure.md
+catalog-structure.md
+mockups.html
+reference-prototype.html
+*.sql
