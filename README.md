@@ -55,5 +55,3 @@ The builder includes 9 pre-configured examples:
 - Deployed on Vercel
 
 ---
-
-Built with ❤️ by the Docker Product & Billing Team
