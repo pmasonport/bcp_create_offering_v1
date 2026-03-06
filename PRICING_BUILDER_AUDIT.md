@@ -1,7 +1,8 @@
 # Comprehensive Audit: Pricing Builder vs. Reference Documentation
 
 **Date**: 2026-03-06
-**Status**: Initial Audit Complete
+**Last Updated**: 2026-03-06
+**Status**: Updated with recent builder improvements
 **Purpose**: Document alignment, gaps, and ambiguities between the Pricing Builder implementation, data-model.md schema, and Billing@Docker On-Rails v2026 PDF
 
 ---
@@ -48,7 +49,7 @@ The builder supports **5 primary monetization strategies**:
   - Recurrence patterns: hourly, daily, weekly, monthly, annual (separate for monthly vs annual billing)
   - Included amounts: different per billing cycle
   - Overage behavior: hardstop, payg (with overage rate)
-  - Rollover: yes/no, with cap (multiplier or fixed amount)
+  - Rollover: yes/no, with cap options (multiplier, fixed amount, or unlimited)
 
 #### 2. PAY-AS-YOU-GO (PAYG)
 - **Timing**: Always monthly, in arrears (hardcoded)
@@ -241,7 +242,7 @@ Three trial types that overlay on paid offerings:
   - Separate recurrence per billing cycle (monthly subscription can have daily allowance reset)
   - Separate included amounts per cycle
   - Overage behavior (hardstop vs payg with rate)
-  - Rollover with caps (multiplier or fixed)
+  - Rollover with cap options (multiplier, fixed amount, or unlimited)
 - **Data Model**: Has offering_features with recurrence_period but NOT on rate_cards
 - **Question**: How does builder's metered config map to data model?
 - **Possible mapping**:
@@ -251,7 +252,7 @@ Three trial types that overlay on paid offerings:
   - overage → separate rate_card with pricing_type='per_unit'?
   - rollover → NOT IN DATA MODEL
 
-**CRITICAL UNKNOWN**: Rollover cap configuration has no data model equivalent. Where does this live?
+**CRITICAL UNKNOWN**: Rollover cap configuration (including unlimited option) has no data model equivalent. Where does this live?
 
 #### 2. **"Both" Billing Cycle UI**
 - **Builder**: Single component with cycle='both' exports as multiple rate_cards
@@ -413,10 +414,11 @@ Three trial types that overlay on paid offerings:
 - **Ambiguity**: Is builder's metered subscription pattern on-rails or off-rails?
 
 #### 2. **Rollover Configuration**
-- **Builder**: Rollover with cap options (multiplier or fixed amount)
+- **Builder**: Rollover with cap options (multiplier, fixed amount, or unlimited)
 - **On-Rails**: Mentions "Rollovers" as entitlement concept (carry unused to next period with max)
 - **Alignment**: ✅ Concept matches but on-rails doesn't detail UI/configuration
 - **Unknown**: Are rollover caps part of rate_card or entitlement configuration?
+- **Note**: Unlimited rollover allows indefinite accumulation (e.g., API credits that never expire)
 
 #### 3. **"Both" Billing Cycle UI Pattern**
 - **Builder**: Users can select "both" and configure monthly + annual pricing in one component
@@ -628,6 +630,7 @@ To use this audit:
 | Date | Changes | Author |
 |------|---------|--------|
 | 2026-03-06 | Initial audit complete | Claude |
+| 2026-03-06 | Updated with builder improvements: unlimited rollover option, state reset fix, removed redundant banner, added 3 new examples | Claude |
 
 ---
 
