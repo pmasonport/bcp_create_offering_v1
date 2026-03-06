@@ -86,7 +86,7 @@ export default function Sidebar({ environment, onEnvironmentChange }) {
         </div>
       </div>
 
-      {/* Pricing Playground */}
+      {/* Pricing Builder */}
       <Link
         to="/playground/pricing"
         className={`w-full flex items-center gap-2 px-5 py-[7px] text-[13px] font-medium ${
@@ -96,11 +96,14 @@ export default function Sidebar({ environment, onEnvironmentChange }) {
         } transition-all`}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+          <line x1="8" y1="6" x2="16" y2="6"></line>
+          <line x1="8" y1="10" x2="16" y2="10"></line>
+          <line x1="8" y1="14" x2="16" y2="14"></line>
+          <line x1="8" y1="18" x2="10" y2="18"></line>
+          <line x1="14" y1="18" x2="16" y2="18"></line>
         </svg>
-        <span>Pricing Playground</span>
+        <span>Pricing Builder</span>
       </Link>
 
       {/* Reporting (disabled) */}

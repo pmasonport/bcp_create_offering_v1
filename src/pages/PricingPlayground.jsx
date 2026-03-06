@@ -1256,8 +1256,8 @@ function CompletedCard({ comp, onEdit, onRemove }) {
 function PricingTable({ resource, model, tiers }) {
   return (
     <div style={{ marginTop: 16, marginBottom: 20, border: `1px solid ${G200}`, borderRadius: 8, overflow: 'hidden', background: '#fff' }}>
-      <div style={{ background: G100, padding: '12px 16px', borderBottom: `1px solid ${G200}` }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: G700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+      <div style={{ background: G100, padding: '10px 14px', borderBottom: `1px solid ${G200}` }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: G700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           {resource} — {model === 'graduated' ? 'Graduated pricing' : 'Volume pricing'}
         </div>
       </div>
@@ -1268,7 +1268,7 @@ function PricingTable({ resource, model, tiers }) {
             gridTemplateColumns: '1fr auto',
             alignItems: 'center',
             gap: 16,
-            padding: '14px 16px',
+            padding: '12px 14px',
             borderBottom: i < tiers.length - 1 ? `1px solid ${G100}` : 'none'
           }}>
             <div style={{ fontSize: 13, color: G900, fontWeight: 500 }}>
@@ -1277,19 +1277,19 @@ function PricingTable({ resource, model, tiers }) {
                !tier.min && tier.max ? `Up to ${tier.max} units` :
                'All units'}
             </div>
-            <div style={{ fontSize: 16, color: G900, fontWeight: 700, letterSpacing: '-0.01em' }}>
+            <div style={{ fontSize: 13, color: G900, fontWeight: 600 }}>
               ${tier.price}/unit
             </div>
           </div>
         ))}
       </div>
       {model === 'graduated' && (
-        <div style={{ background: G50, padding: '10px 16px', borderTop: `1px solid ${G200}`, fontSize: 12, color: G500, lineHeight: 1.6 }}>
+        <div style={{ background: G50, padding: '8px 14px', borderTop: `1px solid ${G200}`, fontSize: 11, color: G500, lineHeight: 1.5 }}>
           Each unit is charged at the rate of the tier it falls in
         </div>
       )}
       {model === 'volume' && (
-        <div style={{ background: G50, padding: '10px 16px', borderTop: `1px solid ${G200}`, fontSize: 12, color: G500, lineHeight: 1.6 }}>
+        <div style={{ background: G50, padding: '8px 14px', borderTop: `1px solid ${G200}`, fontSize: 11, color: G500, lineHeight: 1.5 }}>
           All units are charged at the rate of the highest tier reached
         </div>
       )}
@@ -1615,9 +1615,8 @@ function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringN
                     priceText = `$${r.blockPrice} per ${r.blockSize} ${r.resource.toLowerCase()}`
                   }
                   return (
-                    <div key={idx} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 0', borderBottom: idx < simpleRes.length - 1 || complexRes.length > 0 ? `1px solid ${G200}` : 'none' }}>
-                      <div style={{ fontSize:13, color:G900 }}><Check/>{r.resource}</div>
-                      <div style={{ fontSize:14, fontWeight:600, color:G900 }}>{priceText}</div>
+                    <div key={idx} style={{ fontSize:13, color:G900, lineHeight:1.8 }}>
+                      <Check/>{priceText}
                     </div>
                   )
                 })}
@@ -1656,7 +1655,7 @@ function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringN
       border:`1px solid ${G200}`,
       borderRadius:12,
       padding:32,
-      maxWidth:720,
+      maxWidth:680,
       background:'#fff',
       boxShadow:'0 1px 3px rgba(0,0,0,0.05)'
     }}>
@@ -1931,7 +1930,7 @@ export default function PricingPlayground() {
   }
 
   return (
-    <div style={{ display:'flex', minHeight:'100vh', fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,sans-serif", background:'#fff', fontSize:13, width:'100%' }}>
+    <div style={{ display:'flex', minHeight:'100vh', fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,sans-serif", background:'#fff', fontSize:13, width:'100%', maxWidth:1800, margin:'0 auto' }}>
       {/* ── Left panel ── */}
       <div style={{ flex:1, borderRight:`1px solid ${G200}`, padding:'44px 40px 160px', overflowY:'auto' }}>
         {/* Breadcrumb */}
@@ -2350,10 +2349,10 @@ export default function PricingPlayground() {
       </div>
 
       {/* ── Right panel ── */}
-      <div style={{ flex:1, padding:'44px 60px', position:'sticky', top:0, maxHeight:'100vh', overflowY:'auto', background:G50 }}>
+      <div style={{ flex:1, padding:'44px 40px', position:'sticky', top:0, maxHeight:'100vh', overflowY:'auto', background:G50 }}>
         <div style={{ marginBottom:20 }}>
-          <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>CUSTOMER VIEW</div>
-          <div style={{ fontSize:12, color:G400, lineHeight:1.6 }}>This is how customers will see and understand this offering. The right panel is the deliverable.</div>
+          <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>PREVIEW</div>
+          <div style={{ fontSize:12, color:G400, lineHeight:1.6 }}>This is an example of how your pricing strategy might look.</div>
         </div>
         <SummaryPanel offeringType={offeringType} compatibleWith={compatibleWith} customOfferings={customOfferings} offeringName={offeringName} isFree={isFree} freeOptIn={freeOptIn} components={components} trial={trial}/>
       </div>

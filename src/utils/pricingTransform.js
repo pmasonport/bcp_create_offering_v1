@@ -1,4 +1,4 @@
-// Transform Pricing Playground component to data model-aligned format
+// Transform Pricing Builder component to data model-aligned format
 export function transformComponentForExport(component) {
   const { type } = component
 
