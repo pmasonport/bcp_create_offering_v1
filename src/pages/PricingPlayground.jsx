@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { METERS } from '../data/meters'
 import { OFFERINGS } from '../data/offerings'
@@ -41,6 +41,32 @@ const Pill = ({ children, active, onClick }) => (
   <button onClick={onClick} style={{ padding:'5px 12px', borderRadius:9999, fontSize:12, fontWeight:500, cursor:'pointer', border: active ? `1px solid ${B}` : `1px solid ${G200}`, background: active ? BL : '#fff', color: active ? B : G700, transition:'all 0.12s', outline:'none', fontFamily:'inherit' }}>
     {children}
   </button>
+)
+
+const SegmentedControl = ({ options, value, onChange }) => (
+  <div style={{ display:'inline-flex', background:G100, borderRadius:6, padding:2, gap:2 }}>
+    {options.map(opt => (
+      <button
+        key={opt.value}
+        onClick={() => onChange(opt.value)}
+        style={{
+          padding: '6px 16px',
+          borderRadius: 4,
+          fontSize: 12,
+          fontWeight: 500,
+          cursor: 'pointer',
+          border: 'none',
+          background: value === opt.value ? '#fff' : 'transparent',
+          color: value === opt.value ? G900 : G500,
+          transition: 'all 0.15s',
+          fontFamily: 'inherit',
+          boxShadow: value === opt.value ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+        }}
+      >
+        {opt.label}
+      </button>
+    ))}
+  </div>
 )
 
 const SelCard = ({ title, desc, selected, onClick }) => (
@@ -86,28 +112,200 @@ function InlineCreate({ label, onAdd, fields = [{ key:'name', placeholder:'Name.
   )
 }
 
+// ─── Multi-select Dropdown ──────────────────────────────────────────────────
+function MultiSelect({ items, selected, onChange, placeholder = 'Select...' }) {
+  const [open, setOpen] = useState(false)
+  const toggle = (id) => {
+    if (selected.includes(id)) {
+      onChange(selected.filter(x => x !== id))
+    } else {
+      onChange([...selected, id])
+    }
+  }
+  const remove = (id) => onChange(selected.filter(x => x !== id))
+
+  return (
+    <div style={{ position: 'relative' }}>
+      {/* Trigger */}
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: '100%',
+          padding: '8px 10px',
+          border: `1px solid ${G200}`,
+          borderRadius: 4,
+          fontSize: 13,
+          color: selected.length > 0 ? G900 : G400,
+          background: '#fff',
+          textAlign: 'left',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          minHeight: 36
+        }}
+      >
+        <span>{selected.length > 0 ? `${selected.length} selected` : placeholder}</span>
+        <svg viewBox="0 0 15 15" width="12" height="12" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+          <path d="M3.5 5.5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+
+      {/* Selected tags */}
+      {selected.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+          {selected.map(id => {
+            const item = items.find(i => i.id === id)
+            if (!item) return null
+            return (
+              <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: BL, border: `1px solid ${B}`, borderRadius: 4, fontSize: 12, color: B }}>
+                <span>{item.name}</span>
+                <button onClick={() => remove(id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: B, fontSize: 14, lineHeight: 1, fontFamily: 'inherit' }}>×</button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Dropdown */}
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            marginTop: 4,
+            background: '#fff',
+            border: `1px solid ${G200}`,
+            borderRadius: 6,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            zIndex: 20,
+            maxHeight: 240,
+            overflowY: 'auto'
+          }}>
+            {items.map(item => (
+              <div
+                key={item.id}
+                onClick={() => toggle(item.id)}
+                style={{
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 13,
+                  color: G900,
+                  background: selected.includes(item.id) ? G50 : '#fff',
+                  transition: 'background 0.1s'
+                }}
+                onMouseEnter={e => { if (!selected.includes(item.id)) e.currentTarget.style.background = G50 }}
+                onMouseLeave={e => { if (!selected.includes(item.id)) e.currentTarget.style.background = '#fff' }}
+              >
+                <div style={{
+                  width: 16,
+                  height: 16,
+                  border: `1.5px solid ${selected.includes(item.id) ? B : G300}`,
+                  borderRadius: 3,
+                  background: selected.includes(item.id) ? B : '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  {selected.includes(item.id) && (
+                    <svg viewBox="0 0 13 13" width="10" height="10">
+                      <polyline points="1.5,6.5 5,10 11.5,3" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </div>
+                <span>{item.name}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ─── Strategy Forms ─────────────────────────────────────────────────────────
-function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onCreateMutable }) {
-  const [c, setC] = useState({ whatGet:null, feature:null, quantity:'', overage:null, overageRate:'', rollover:null, rollCapType:null, rollCap:'', timing:null, cycle:null, price:'', priceAnnual:'' })
+function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onCreateMutable, initialData }) {
+  const [c, setC] = useState(initialData || {
+    whatGet:null,
+    feature:null,
+    quantity:'',
+    overage:null,
+    overageRate:'',
+    rollover:null,
+    rollCapType:null,
+    rollCap:'',
+    timing:null,
+    cycle:null,
+    price:'',
+    priceAnnual:'',
+    // New fields for metered + quantity
+    billingCycle:null,
+    recurrenceMonthly:null,
+    recurrenceAnnual:null,
+    includedAmountMonthly:'',
+    includedAmountAnnual:''
+  })
   const upd = (k,v) => setC(p=>({...p,[k]:v}))
 
   const featureType = (f) => allMetered.find(m=>m.name===f) ? 'metered' : 'mutable'
   const unitLabel = (f) => allMutable.find(m=>m.name===f)?.unit || 'unit'
 
+  // Validation for non-metered cases (access or mutable quantity)
   const priceReady = c.timing && c.cycle && (
     (c.cycle==='monthly'&&c.price) || (c.cycle==='annual'&&c.priceAnnual) || (c.cycle==='both'&&c.price&&c.priceAnnual)
   )
-  const canDone = c.whatGet==='access' ? priceReady : (c.feature && priceReady)
+
+  // Validation for metered + quantity
+  const meteredQuantityReady = c.billingCycle &&
+    (c.billingCycle === 'monthly' ? (c.recurrenceMonthly && c.includedAmountMonthly && c.price) :
+     c.billingCycle === 'annual' ? (c.recurrenceAnnual && c.includedAmountAnnual && c.priceAnnual) :
+     (c.recurrenceMonthly && c.recurrenceAnnual && c.includedAmountMonthly && c.includedAmountAnnual && c.price && c.priceAnnual))
+    && c.timing && c.overage
+    && (c.overage === 'hardstop' || c.overageRate)
+    && (c.rollover === false || (c.rollCapType && c.rollCap))
+
+  const isMeteredQuantity = c.whatGet === 'quantity' && c.feature && featureType(c.feature) === 'metered'
+
+  const canDone = c.whatGet === 'access' ? priceReady :
+                  isMeteredQuantity ? meteredQuantityReady :
+                  (c.feature && priceReady)
 
   return (
     <div>
       <Fade>
-        <SectionQ>What do customers get?</SectionQ>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:6 }}>
-          <SelCard title="Access" desc="Flat fee. Unlocks the product — no quantity or meter." selected={c.whatGet==='access'} onClick={()=>upd('whatGet','access')}/>
-          <SelCard title="A quantity of something" desc="Price scales with seats, repos, or an included usage allowance." selected={c.whatGet==='quantity'} onClick={()=>upd('whatGet','quantity')}/>
+        <SectionQ>Can customers choose a quantity when purchasing?</SectionQ>
+        <div style={{ fontSize:13, color:G500, marginBottom:16, lineHeight:1.5 }}>
+          For example, a team plan sold per seat, buying 10 gives you 10 seats.
         </div>
-        <Explainer>Access = flat fee no matter what. Quantity = price is tied to a countable thing — seats, repos, or usage.</Explainer>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+          <SelCard
+            title="No — fixed offering"
+            desc="One price, no quantity choice"
+            selected={c.whatGet==='access'}
+            onClick={()=>upd('whatGet','access')}
+          />
+          <SelCard
+            title="Yes — quantity selector"
+            desc="Price scales by quantity chosen"
+            selected={c.whatGet==='quantity'}
+            onClick={()=>upd('whatGet','quantity')}
+          />
+        </div>
+        {c.whatGet==='access' && (
+          <Fade key="access-note">
+            <div style={{ marginTop:12, fontSize:12, color:G500, lineHeight:1.6 }}>
+              → What's included (features, usage limits, etc.) will be configured in the Entitlements step
+            </div>
+          </Fade>
+        )}
       </Fade>
 
       {c.whatGet==='quantity' && (
@@ -136,46 +334,237 @@ function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onC
             })}
           </Select>
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-            <InlineCreate label="New feature" fields={[{key:'name',placeholder:'Feature name'},{key:'unit',placeholder:'Unit (seat)'},{key:'plural',placeholder:'Plural (seats)'}]} onAdd={f=>onCreateMutable(f)}/>
-            <InlineCreate label="New metered resource" fields={[{key:'name',placeholder:'Resource name'}]} onAdd={f=>onCreateMetered(f)}/>
+            <InlineCreate label="New feature" fields={[{key:'name',placeholder:'Feature name'},{key:'unit',placeholder:'Unit (seat)'},{key:'plural',placeholder:'Plural (seats)'}]} onAdd={f=>{onCreateMutable(f); upd('feature', f.name)}}/>
+            <InlineCreate label="New metered resource" fields={[{key:'name',placeholder:'Resource name'}]} onAdd={f=>{onCreateMetered(f.name); upd('feature', f.name)}}/>
           </div>
 
           {c.feature && featureType(c.feature)==='metered' && (
             <Fade key="met-detail">
               <Divider mt={16} mb={16}/>
-              <div style={{ marginBottom:14 }}>
-                <Label hint={`${c.feature} / period`}>Included per billing period</Label>
-                <Input type="number" placeholder="500" value={c.quantity} onChange={e=>upd('quantity',e.target.value)} style={{ width:160 }}/>
-              </div>
-              <SectionQ>When the included amount runs out</SectionQ>
-              <div style={{ display:'flex', gap:8, marginBottom:12 }}>
-                <Pill active={c.overage==='hardstop'} onClick={()=>upd('overage','hardstop')}>Hard stop</Pill>
-                <Pill active={c.overage==='payg'} onClick={()=>upd('overage','payg')}>PAYG overage</Pill>
-              </div>
-              {c.overage==='payg' && (
-                <Fade key="ov-rate">
-                  <div style={{ marginBottom:14 }}>
-                    <Label hint="per unit">Overage rate ($)</Label>
-                    <Input type="number" placeholder="0.001" value={c.overageRate} onChange={e=>upd('overageRate',e.target.value)} style={{ width:140 }}/>
-                  </div>
+
+              {/* Step 1: Billing Cycle */}
+              <SectionQ>Billing cycle</SectionQ>
+              <SegmentedControl
+                value={c.billingCycle}
+                onChange={(v) => upd('billingCycle', v)}
+                options={[
+                  { value: 'monthly', label: 'Monthly' },
+                  { value: 'annual', label: 'Annual' },
+                  { value: 'both', label: 'Both' }
+                ]}
+              />
+
+              {/* Step 2-4: Configure Billing (Grouped by billing cycle) */}
+              {c.billingCycle && (
+                <Fade key="configure-billing">
+                  <Divider mt={20} mb={20}/>
+
+                  {/* Monthly Billing Configuration */}
+                  {(c.billingCycle === 'monthly' || c.billingCycle === 'both') && (
+                    <div style={{ marginBottom: c.billingCycle === 'both' ? 28 : 0 }}>
+                      {c.billingCycle === 'both' && (
+                        <div style={{ fontSize:13, fontWeight:600, color:G700, marginBottom:14 }}>
+                          Monthly billing
+                        </div>
+                      )}
+
+                      <SectionQ>How often does a customer's allowance refresh?</SectionQ>
+                      <SegmentedControl
+                        value={c.recurrenceMonthly}
+                        onChange={(v) => upd('recurrenceMonthly', v)}
+                        options={[
+                          { value: 'daily', label: 'Every day' },
+                          { value: 'monthly', label: 'Every month' }
+                        ]}
+                      />
+                      {c.recurrenceMonthly && (
+                        <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
+                          {c.recurrenceMonthly === 'daily' && '→ Allowance resets at midnight every day'}
+                          {c.recurrenceMonthly === 'monthly' && '→ Allowance resets on the same day each month'}
+                        </div>
+                      )}
+
+                      {c.recurrenceMonthly && (
+                        <Fade key="monthly-amount">
+                          <div style={{ marginTop: 16, marginBottom: 14 }}>
+                            <Label hint={`${c.feature} per purchase / ${c.recurrenceMonthly === 'daily' ? 'day' : 'month'}`}>
+                              {c.billingCycle === 'both' ? 'Included amount' : 'How much does one purchase include?'}
+                            </Label>
+                            <Input
+                              type="number"
+                              placeholder="100"
+                              value={c.includedAmountMonthly}
+                              onChange={e=>upd('includedAmountMonthly',e.target.value)}
+                              style={{ width:160 }}
+                            />
+                          </div>
+                        </Fade>
+                      )}
+
+                      {c.includedAmountMonthly && (
+                        <Fade key="monthly-price">
+                          <div style={{ marginBottom: 14 }}>
+                            <Label hint={`/ month for ${c.includedAmountMonthly} ${c.feature} / ${c.recurrenceMonthly === 'daily' ? 'day' : 'month'}`}>
+                              {c.billingCycle === 'both' ? 'Price' : 'Price ($)'}
+                            </Label>
+                            <Input
+                              type="number"
+                              placeholder="5.00"
+                              value={c.price}
+                              onChange={e=>upd('price',e.target.value)}
+                              style={{ width:160 }}
+                            />
+                          </div>
+                        </Fade>
+                      )}
+
+                      {c.price && (
+                        <Fade key="monthly-summary">
+                          <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
+                            → ${c.price}/month includes {c.includedAmountMonthly} {c.feature}/{c.recurrenceMonthly === 'daily' ? 'day' : 'month'}
+                          </div>
+                        </Fade>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Annual Billing Configuration */}
+                  {(c.billingCycle === 'annual' || c.billingCycle === 'both') && (
+                    <div>
+                      {c.billingCycle === 'both' && (
+                        <div style={{ fontSize:13, fontWeight:600, color:G700, marginBottom:14, marginTop:20 }}>
+                          Annual billing
+                        </div>
+                      )}
+
+                      <SectionQ>How often does a customer's allowance refresh?</SectionQ>
+                      <SegmentedControl
+                        value={c.recurrenceAnnual}
+                        onChange={(v) => upd('recurrenceAnnual', v)}
+                        options={[
+                          { value: 'daily', label: 'Every day' },
+                          { value: 'monthly', label: 'Every month' },
+                          { value: 'yearly', label: 'Once a year' }
+                        ]}
+                      />
+                      {c.recurrenceAnnual && (
+                        <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
+                          {c.recurrenceAnnual === 'daily' && '→ Allowance resets at midnight every day'}
+                          {c.recurrenceAnnual === 'monthly' && '→ Allowance resets on the same day each month'}
+                          {c.recurrenceAnnual === 'yearly' && '→ Allowance resets once per year on the anniversary date'}
+                        </div>
+                      )}
+
+                      {c.recurrenceAnnual && (
+                        <Fade key="annual-amount">
+                          <div style={{ marginTop: 16, marginBottom: 14 }}>
+                            <Label hint={`${c.feature} per purchase / ${c.recurrenceAnnual === 'daily' ? 'day' : c.recurrenceAnnual === 'monthly' ? 'month' : 'year'}`}>
+                              {c.billingCycle === 'both' ? 'Included amount' : 'How much does one purchase include?'}
+                            </Label>
+                            <Input
+                              type="number"
+                              placeholder="1000"
+                              value={c.includedAmountAnnual}
+                              onChange={e=>upd('includedAmountAnnual',e.target.value)}
+                              style={{ width:160 }}
+                            />
+                          </div>
+                        </Fade>
+                      )}
+
+                      {c.includedAmountAnnual && (
+                        <Fade key="annual-price">
+                          <div style={{ marginBottom: 14 }}>
+                            <Label hint={`/ year for ${c.includedAmountAnnual} ${c.feature} / ${c.recurrenceAnnual === 'daily' ? 'day' : c.recurrenceAnnual === 'monthly' ? 'month' : 'year'}`}>
+                              {c.billingCycle === 'both' ? 'Price' : 'Price ($)'}
+                            </Label>
+                            <Input
+                              type="number"
+                              placeholder="50.00"
+                              value={c.priceAnnual}
+                              onChange={e=>upd('priceAnnual',e.target.value)}
+                              style={{ width:160 }}
+                            />
+                          </div>
+                        </Fade>
+                      )}
+
+                      {c.priceAnnual && (
+                        <Fade key="annual-summary">
+                          <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
+                            → ${c.priceAnnual}/year includes {c.includedAmountAnnual} {c.feature}/{c.recurrenceAnnual === 'daily' ? 'day' : c.recurrenceAnnual === 'monthly' ? 'month' : 'year'}
+                          </div>
+                        </Fade>
+                      )}
+                    </div>
+                  )}
                 </Fade>
               )}
-              <SectionQ>Rollover</SectionQ>
-              <div style={{ display:'flex', gap:8 }}>
-                <Pill active={c.rollover===true} onClick={()=>upd('rollover',true)}>Unused rolls over</Pill>
-                <Pill active={c.rollover===false} onClick={()=>upd('rollover',false)}>Use it or lose it</Pill>
-              </div>
-              {c.rollover && (
-                <Fade key="roll-cap">
-                  <div style={{ marginTop:14 }}>
-                    <SectionQ>Cap expressed as</SectionQ>
-                    <div style={{ display:'flex', gap:8, marginBottom:10 }}>
-                      <Pill active={c.rollCapType==='multiplier'} onClick={()=>upd('rollCapType','multiplier')}>Multiplier (e.g. 2×)</Pill>
-                      <Pill active={c.rollCapType==='fixed'} onClick={()=>upd('rollCapType','fixed')}>Fixed amount</Pill>
+
+              {/* Step 5: Payment Timing */}
+              {c.billingCycle && ((c.billingCycle === 'monthly' && c.price) || (c.billingCycle === 'annual' && c.priceAnnual) || (c.billingCycle === 'both' && c.price && c.priceAnnual)) && (
+                <Fade key="timing">
+                  <Divider mt={20} mb={20}/>
+                  <SectionQ>When do customers pay?</SectionQ>
+                  <SegmentedControl
+                    value={c.timing}
+                    onChange={(v) => upd('timing', v)}
+                    options={[
+                      { value: 'advance', label: 'In advance' },
+                      { value: 'arrears', label: 'In arrears' }
+                    ]}
+                  />
+                  {c.timing && (
+                    <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
+                      {c.timing === 'advance' && '→ Customer pays at the beginning of the period'}
+                      {c.timing === 'arrears' && '→ Customer pays at the end of the period'}
                     </div>
-                    {c.rollCapType==='multiplier' && <Input type="number" placeholder="2" value={c.rollCap} onChange={e=>upd('rollCap',e.target.value)} style={{ width:100 }}/>}
-                    {c.rollCapType==='fixed' && <Input type="number" placeholder="1000" value={c.rollCap} onChange={e=>upd('rollCap',e.target.value)} style={{ width:160 }}/>}
+                  )}
+                </Fade>
+              )}
+
+              {/* Step 6: Overage Behavior */}
+              {c.timing && (
+                <Fade key="overage">
+                  <Divider mt={20} mb={20}/>
+                  <SectionQ>What happens when the included amount runs out?</SectionQ>
+                  <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+                    <Pill active={c.overage==='hardstop'} onClick={()=>upd('overage','hardstop')}>Hard stop</Pill>
+                    <Pill active={c.overage==='payg'} onClick={()=>upd('overage','payg')}>Soft limit (PAYG)</Pill>
                   </div>
+                  {c.overage==='payg' && (
+                    <Fade key="ov-rate">
+                      <div style={{ marginBottom:14 }}>
+                        <Label hint="per unit">Overage rate ($)</Label>
+                        <Input type="number" placeholder="0.001" value={c.overageRate} onChange={e=>upd('overageRate',e.target.value)} style={{ width:140 }}/>
+                      </div>
+                    </Fade>
+                  )}
+                </Fade>
+              )}
+
+              {/* Step 7: Rollover */}
+              {c.overage && (
+                <Fade key="rollover">
+                  <Divider mt={20} mb={20}/>
+                  <SectionQ>Do unused amounts rollover?</SectionQ>
+                  <div style={{ display:'flex', gap:8 }}>
+                    <Pill active={c.rollover===true} onClick={()=>upd('rollover',true)}>Yes, unused rolls over</Pill>
+                    <Pill active={c.rollover===false} onClick={()=>upd('rollover',false)}>No, use it or lose it</Pill>
+                  </div>
+                  {c.rollover && (
+                    <Fade key="roll-cap">
+                      <div style={{ marginTop:14 }}>
+                        <SectionQ>Maximum rollover cap</SectionQ>
+                        <div style={{ display:'flex', gap:8, marginBottom:10 }}>
+                          <Pill active={c.rollCapType==='multiplier'} onClick={()=>upd('rollCapType','multiplier')}>Multiplier (e.g. 2×)</Pill>
+                          <Pill active={c.rollCapType==='fixed'} onClick={()=>upd('rollCapType','fixed')}>Fixed amount</Pill>
+                        </div>
+                        {c.rollCapType==='multiplier' && <Input type="number" placeholder="2" value={c.rollCap} onChange={e=>upd('rollCap',e.target.value)} style={{ width:100 }}/>}
+                        {c.rollCapType==='fixed' && <Input type="number" placeholder="1000" value={c.rollCap} onChange={e=>upd('rollCap',e.target.value)} style={{ width:160 }}/>}
+                      </div>
+                    </Fade>
+                  )}
                 </Fade>
               )}
             </Fade>
@@ -183,24 +572,39 @@ function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onC
         </Fade>
       )}
 
-      {(c.whatGet==='access' || (c.whatGet==='quantity' && c.feature)) && (
+      {(c.whatGet==='access' || (c.whatGet==='quantity' && c.feature && featureType(c.feature)==='mutable')) && (
         <Fade key="timing">
           <Divider />
-          <SectionQ>Billing timing</SectionQ>
-          <div style={{ display:'flex', gap:8, marginBottom:20 }}>
-            <Pill active={c.timing==='advance'} onClick={()=>upd('timing','advance')}>In advance</Pill>
-            <Pill active={c.timing==='arrears'} onClick={()=>upd('timing','arrears')}>In arrears</Pill>
-          </div>
+          <SectionQ>When do customers pay?</SectionQ>
+          <SegmentedControl
+            value={c.timing}
+            onChange={(v) => upd('timing', v)}
+            options={[
+              { value: 'advance', label: 'In advance' },
+              { value: 'arrears', label: 'In arrears' }
+            ]}
+          />
+          {c.timing && (
+            <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
+              {c.timing === 'advance' && '→ Customer pays at the beginning of the period'}
+              {c.timing === 'arrears' && '→ Customer pays at the end of the period'}
+            </div>
+          )}
+          <Divider mt={20} mb={20}/>
           <SectionQ>Billing cycle</SectionQ>
-          <div style={{ display:'flex', gap:8 }}>
-            <Pill active={c.cycle==='monthly'} onClick={()=>upd('cycle','monthly')}>Monthly</Pill>
-            <Pill active={c.cycle==='annual'} onClick={()=>upd('cycle','annual')}>Annual</Pill>
-            <Pill active={c.cycle==='both'} onClick={()=>upd('cycle','both')}>Both</Pill>
-          </div>
+          <SegmentedControl
+            value={c.cycle}
+            onChange={(v) => upd('cycle', v)}
+            options={[
+              { value: 'monthly', label: 'Monthly' },
+              { value: 'annual', label: 'Annual' },
+              { value: 'both', label: 'Both' }
+            ]}
+          />
         </Fade>
       )}
 
-      {c.timing && c.cycle && (
+      {c.timing && c.cycle && (c.whatGet==='access' || (c.whatGet==='quantity' && c.feature && featureType(c.feature)==='mutable')) && (
         <Fade key="price">
           <Divider />
           <SectionQ>Price</SectionQ>
@@ -231,13 +635,46 @@ function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onC
   )
 }
 
-function PAYGForm({ onDone, allMetered, onCreateMetered }) {
+function PAYGForm({ onDone, allMetered, onCreateMetered, initialData }) {
   const empty = () => ({ resource:'', model:'perunit', price:'', blockSize:'', blockPrice:'', tiers:[{min:'0',max:'',price:''}] })
-  const [resources, setResources] = useState([empty()])
+  const [resources, setResources] = useState(initialData?.resources || [empty()])
   const upd = (i,k,v) => setResources(r=>r.map((x,j)=>j===i?{...x,[k]:v}:x))
-  const updTier = (ri,ti,k,v) => setResources(r=>r.map((x,j)=>j===ri?{...x,tiers:x.tiers.map((t,ki)=>ki===ti?{...t,[k]:v}:t)}:x))
-  const addTier = ri => setResources(r=>r.map((x,j)=>j===ri?{...x,tiers:[...x.tiers,{min:'',max:'',price:''}]}:x))
-  const canDone = resources.some(r=>r.resource)
+  const updTier = (ri,ti,k,v) => {
+    setResources(r=>r.map((x,j)=>j===ri?{
+      ...x,
+      tiers:x.tiers.map((t,ki)=>{
+        if (ki===ti) {
+          // Update the current tier
+          return {...t,[k]:v}
+        } else if (k==='max' && ki===ti+1 && v) {
+          // Auto-update next tier's min when current tier's max changes
+          const maxNum = parseFloat(v)
+          if (!isNaN(maxNum)) {
+            return {...t, min: String(maxNum + 1)}
+          }
+        }
+        return t
+      })
+    }:x))
+  }
+  const addTier = ri => setResources(r=>r.map((x,j)=>{
+    if (j===ri) {
+      const lastTier = x.tiers[x.tiers.length - 1]
+      const newMin = lastTier?.max ? String(parseFloat(lastTier.max) + 1) : ''
+      return {...x, tiers:[...x.tiers, {min:newMin, max:'', price:''}]}
+    }
+    return x
+  }))
+
+  const isResourceValid = (r) => {
+    if (!r.resource) return false
+    if (r.model === 'perunit') return r.price
+    if (r.model === 'block') return r.blockSize && r.blockPrice
+    if (r.model === 'graduated' || r.model === 'volume') return r.tiers.some(t => t.price)
+    return false
+  }
+
+  const canDone = resources.some(isResourceValid)
 
   return (
     <div>
@@ -260,7 +697,7 @@ function PAYGForm({ onDone, allMetered, onCreateMetered }) {
                   )
                 })}
               </Select>
-              <InlineCreate label="New metered resource" fields={[{key:'name',placeholder:'Resource name'}]} onAdd={f=>onCreateMetered(f.name)}/>
+              <InlineCreate label="New metered resource" fields={[{key:'name',placeholder:'Resource name'}]} onAdd={f=>{onCreateMetered(f.name); upd(i,'resource',f.name)}}/>
             </div>
             {res.resource && (
               <>
@@ -306,7 +743,7 @@ function PAYGForm({ onDone, allMetered, onCreateMetered }) {
         <Fade key="done">
           <Divider mt={8} mb={0}/>
           <div style={{ display:'flex', justifyContent:'flex-end', paddingTop:20 }}>
-            <BtnPrimary onClick={()=>onDone({ type:'payg', resources: resources.filter(r=>r.resource) })}>Add component</BtnPrimary>
+            <BtnPrimary onClick={()=>onDone({ type:'payg', resources: resources.filter(isResourceValid) })}>Add component</BtnPrimary>
           </div>
         </Fade>
       )}
@@ -314,8 +751,8 @@ function PAYGForm({ onDone, allMetered, onCreateMetered }) {
   )
 }
 
-function PrepaidForm({ onDone, allMetered, onCreateMetered }) {
-  const [c, setC] = useState({ resource:'', packs:[{qty:'',price:''}], expires:null, expiryMonths:'', stackable:null })
+function PrepaidForm({ onDone, allMetered, onCreateMetered, initialData }) {
+  const [c, setC] = useState(initialData || { resource:'', packs:[{qty:'',price:''}], expires:null, expiryMonths:'', stackable:null })
   const upd = (k,v) => setC(p=>({...p,[k]:v}))
   const updPack = (i,k,v) => setC(p=>({...p,packs:p.packs.map((x,j)=>j===i?{...x,[k]:v}:x)}))
   const canDone = c.resource && c.packs.every(p=>p.qty&&p.price) && c.expires!==null && c.stackable!==null
@@ -337,7 +774,7 @@ function PrepaidForm({ onDone, allMetered, onCreateMetered }) {
             )
           })}
         </Select>
-        <InlineCreate label="New metered resource" fields={[{key:'name',placeholder:'Resource name'}]} onAdd={f=>onCreateMetered(f.name)}/>
+        <InlineCreate label="New metered resource" fields={[{key:'name',placeholder:'Resource name'}]} onAdd={f=>{onCreateMetered(f.name); upd('resource',f.name)}}/>
       </Fade>
 
       {c.resource && (
@@ -396,19 +833,28 @@ function PrepaidForm({ onDone, allMetered, onCreateMetered }) {
   )
 }
 
-function OneTimeForm({ onDone }) {
-  const [c, setC] = useState({ timing:null, price:'' })
+function OneTimeForm({ onDone, initialData }) {
+  const [c, setC] = useState(initialData || { timing:null, price:'' })
   const upd = (k,v) => setC(p=>({...p,[k]:v}))
   const canDone = c.timing && c.price
   return (
     <div>
       <Fade>
-        <SectionQ>Payment timing</SectionQ>
-        <div style={{ display:'flex', gap:8, marginBottom:6 }}>
-          <Pill active={c.timing==='advance'} onClick={()=>upd('timing','advance')}>In advance</Pill>
-          <Pill active={c.timing==='arrears'} onClick={()=>upd('timing','arrears')}>In arrears</Pill>
-        </div>
-        <Explainer>{c.timing==='advance' ? 'Customer pays before receiving access.' : c.timing==='arrears' ? 'Customer pays after the service is delivered.' : 'In advance = pay before access. In arrears = pay after delivery.'}</Explainer>
+        <SectionQ>When do customers pay?</SectionQ>
+        <SegmentedControl
+          value={c.timing}
+          onChange={(v) => upd('timing', v)}
+          options={[
+            { value: 'advance', label: 'In advance' },
+            { value: 'arrears', label: 'In arrears' }
+          ]}
+        />
+        {c.timing && (
+          <div style={{ marginTop:8, fontSize:12, color:G500, lineHeight:1.5 }}>
+            {c.timing === 'advance' && '→ Customer pays before receiving access'}
+            {c.timing === 'arrears' && '→ Customer pays after the service is delivered'}
+          </div>
+        )}
       </Fade>
       {c.timing && (
         <Fade key="price">
@@ -429,19 +875,23 @@ function OneTimeForm({ onDone }) {
   )
 }
 
-function MFCForm({ onDone }) {
+function MFCForm({ onDone, initialData }) {
   const activeOfferings = OFFERINGS.filter(o => o.status === 'active')
-  const [offerings, setOfferings] = useState([])
-  const [discounts, setDiscounts] = useState({})
-  const toggle = o => setOfferings(p=>p.includes(o)?p.filter(x=>x!==o):[...p,o])
+  const [offerings, setOfferings] = useState(initialData?.offerings || [])
+  const [discounts, setDiscounts] = useState(initialData?.discounts || {})
   const canDone = offerings.length > 0
   return (
     <div>
-      <Note>MFC is a commercial wrapper — it doesn't redefine how offerings are priced. The commitment amount is negotiated per customer and is not set here.</Note>
+      <Note>MFC is a commercial wrapper — it doesn't redefine how offerings are priced. The commitment amount and commitment term are negotiated per customer and are not set here.</Note>
       <Fade>
-        <SectionQ>Which offerings are in scope?</SectionQ>
-        <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:6 }}>
-          {activeOfferings.map(o=><Pill key={o.id} active={offerings.includes(o.id)} onClick={()=>toggle(o.id)}>{o.name}</Pill>)}
+        <div style={{ marginBottom: 14 }}>
+          <Label>Which offerings are in scope?</Label>
+          <MultiSelect
+            items={activeOfferings}
+            selected={offerings}
+            onChange={setOfferings}
+            placeholder="Select offerings..."
+          />
         </div>
         <Explainer>The customer can use any of these offerings to burn down their committed spend.</Explainer>
       </Fade>
@@ -553,7 +1003,16 @@ function TrialForm({ onDone }) {
 function CompletedCard({ comp, onEdit, onRemove }) {
   const labels = { subscription:'Subscription', payg:'Pay-as-you-go', prepaid:'Prepaid w/ Top-Ups', onetime:'One-time Payment', mfc:'Min. Fee Commitment' }
   const meta = {
-    subscription: () => `${comp.whatGet==='access'?'Flat fee':`Per ${comp.feature||'unit'}`} · ${comp.cycle||''} · $${comp.price||comp.priceAnnual||'?'}`,
+    subscription: () => {
+      const isMeteredQuantity = comp.whatGet === 'quantity' && comp.featureType === 'metered' && comp.billingCycle
+      if (isMeteredQuantity) {
+        const cycle = comp.billingCycle === 'both' ? 'monthly/annual' : comp.billingCycle
+        const price = comp.billingCycle === 'both' ? `$${comp.price}/$${comp.priceAnnual}` :
+                     comp.billingCycle === 'monthly' ? `$${comp.price}` : `$${comp.priceAnnual}`
+        return `Per ${comp.feature} · ${cycle} · ${price}`
+      }
+      return `${comp.whatGet==='access'?'Flat fee':`Per ${comp.feature||'unit'}`} · ${comp.cycle||''} · $${comp.price||comp.priceAnnual||'?'}`
+    },
     payg: () => comp.resources?.filter(r=>r.resource).map(r=>r.resource).join(', ') || '—',
     prepaid: () => `${comp.resource} · ${comp.packs?.length} pack${comp.packs?.length===1?'':'s'}${comp.expires?` · ${comp.expiryMonths}mo expiry`:''}`,
     onetime: () => `$${comp.price} · ${comp.timing==='advance'?'in advance':'in arrears'}`,
@@ -580,10 +1039,49 @@ function CompletedCard({ comp, onEdit, onRemove }) {
   )
 }
 
+// ─── Pricing Table for Tiers ───────────────────────────────────────────────
+function PricingTable({ resource, model, tiers }) {
+  return (
+    <div style={{ marginTop: 12, marginBottom: 16, border: `1px solid ${G200}`, borderRadius: 6, overflow: 'hidden' }}>
+      <div style={{ background: G50, padding: '8px 12px', borderBottom: `1px solid ${G200}` }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: G500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          {resource} — {model === 'graduated' ? 'Graduated pricing' : 'Volume pricing'}
+        </div>
+      </div>
+      <div style={{ background: '#fff' }}>
+        {tiers.map((tier, i) => (
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, padding: '10px 12px', borderBottom: i < tiers.length - 1 ? `1px solid ${G100}` : 'none', fontSize: 12 }}>
+            <div style={{ color: G700 }}>
+              {tier.min && tier.max ? `${tier.min} – ${tier.max} units` :
+               tier.min && !tier.max ? `${tier.min}+ units` :
+               !tier.min && tier.max ? `Up to ${tier.max} units` :
+               'All units'}
+            </div>
+            <div style={{ color: G900, fontWeight: 500, textAlign: 'right' }}>
+              ${tier.price}/unit
+            </div>
+          </div>
+        ))}
+      </div>
+      {model === 'graduated' && (
+        <div style={{ background: G50, padding: '8px 12px', borderTop: `1px solid ${G200}`, fontSize: 11, color: G500, lineHeight: 1.5 }}>
+          Each unit is charged at the rate of the tier it falls in
+        </div>
+      )}
+      {model === 'volume' && (
+        <div style={{ background: G50, padding: '8px 12px', borderTop: `1px solid ${G200}`, fontSize: 11, color: G500, lineHeight: 1.5 }}>
+          All units are charged at the rate of the highest tier reached
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Summary Panel ──────────────────────────────────────────────────────────
-function SummaryPanel({ isFree, components, trial }) {
+function SummaryPanel({ offeringName, isFree, freeOptIn, components, trial }) {
   const Check = () => <span style={{ color:GREEN, marginRight:8 }}>✓</span>
   const activeOfferings = OFFERINGS.filter(o => o.status === 'active')
+  const displayName = offeringName.trim() || 'Your offering'
 
   if (isFree===null) return (
     <div style={{ textAlign:'center', padding:'60px 16px' }}>
@@ -592,16 +1090,26 @@ function SummaryPanel({ isFree, components, trial }) {
     </div>
   )
 
-  if (isFree) return (
+  if (isFree && !freeOptIn) return (
+    <div style={{ textAlign:'center', padding:'60px 16px' }}>
+      <div style={{ fontSize:28, marginBottom:12, opacity:0.3 }}>◻</div>
+      <div style={{ fontSize:13, color:G400, lineHeight:1.8 }}>Choose how customers access<br/>this free offering.</div>
+    </div>
+  )
+
+  if (isFree && freeOptIn) return (
     <div style={{ border:`1px solid ${G200}`, borderRadius:8, padding:24 }}>
-      <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>YOUR OFFERING</div>
+      <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>{displayName.toUpperCase()}</div>
       <div><span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>$0</span><span style={{ fontSize:14, color:G500 }}> / month</span></div>
       <div style={{ fontSize:13, color:G500, marginTop:4, marginBottom:20 }}>Free — no purchase required</div>
       <Divider mt={0} mb={16}/>
-      <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12 }}>WHAT'S INCLUDED</div>
+      <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12 }}>HOW IT WORKS</div>
       <div style={{ fontSize:13, color:G900, marginBottom:8 }}><Check/>Full access — no charge</div>
-      <div style={{ fontSize:13, color:G900, marginBottom:20 }}><Check/>Available to all customers automatically</div>
-      <button style={{ width:'100%', padding:10, background:G900, color:'#fff', border:'none', borderRadius:4, fontSize:13, fontWeight:500, cursor:'default', fontFamily:'inherit' }}>Get started — free</button>
+      {freeOptIn==='automatic' && <div style={{ fontSize:13, color:G900, marginBottom:20 }}><Check/>Available to all customers automatically</div>}
+      {freeOptIn==='optin' && <div style={{ fontSize:13, color:G900, marginBottom:20 }}><Check/>Requires customer opt-in to activate</div>}
+      <button style={{ width:'100%', padding:10, background:G900, color:'#fff', border:'none', borderRadius:4, fontSize:13, fontWeight:500, cursor:'default', fontFamily:'inherit' }}>
+        {freeOptIn==='automatic' ? 'Already available' : 'Get started — free'}
+      </button>
     </div>
   )
 
@@ -623,54 +1131,146 @@ function SummaryPanel({ isFree, components, trial }) {
 
     if (comp.type==='subscription') {
       cta = 'Subscribe'
-      const hasBoth = comp.cycle==='both' && comp.price && comp.priceAnnual
-      const monthly = comp.cycle!=='annual'
-      const annual = comp.cycle!=='monthly'
+      const isMeteredQuantity = comp.whatGet === 'quantity' && comp.featureType === 'metered' && comp.billingCycle
 
-      if (hasBoth) {
-        // Show both prices with savings
-        const savings = Math.round((1-(comp.priceAnnual/12)/comp.price)*100)
-        priceDisplay = (
-          <div>
+      if (isMeteredQuantity) {
+        // New flow for metered + quantity
+        const hasBoth = comp.billingCycle === 'both' && comp.price && comp.priceAnnual
+
+        if (hasBoth) {
+          // Show both prices with savings and descriptions
+          const savings = Math.round((1-(comp.priceAnnual/12)/comp.price)*100)
+          const recurrenceMonthly = comp.recurrenceMonthly === 'daily' ? 'day' : 'month'
+          const recurrenceAnnual = comp.recurrenceAnnual === 'daily' ? 'day' : comp.recurrenceAnnual === 'monthly' ? 'month' : 'year'
+          priceDisplay = (
             <div>
-              <span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${comp.price}</span>
-              <span style={{ fontSize:13, color:G500 }}>/{comp.featureType==='mutable'?`${comp.unitLabel}/`:''}mo</span>
+              <div>
+                <span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${comp.price}</span>
+                <span style={{ fontSize:13, color:G500 }}>/mo</span>
+              </div>
+              <div style={{ fontSize:13, color:G500, marginTop:4 }}>
+                for {comp.includedAmountMonthly} {comp.feature} / {recurrenceMonthly}
+              </div>
+              <div style={{ fontSize:14, color:G500, marginTop:8 }}>
+                or ${comp.priceAnnual}/yr
+                {savings > 0 && <span style={{ color:GREEN, marginLeft:8 }}>· save {savings}%</span>}
+              </div>
+              <div style={{ fontSize:13, color:G500, marginTop:4 }}>
+                for {comp.includedAmountAnnual} {comp.feature} / {recurrenceAnnual}
+              </div>
             </div>
-            <div style={{ fontSize:14, color:G500, marginTop:6 }}>
-              or ${comp.priceAnnual}/{comp.featureType==='mutable'?`${comp.unitLabel}/`:''}yr
-              {savings > 0 && <span style={{ color:GREEN, marginLeft:8 }}>· save {savings}%</span>}
+          )
+        } else if (comp.billingCycle === 'monthly' && comp.price) {
+          const recurrence = comp.recurrenceMonthly === 'daily' ? 'day' : 'month'
+          priceDisplay = (
+            <div>
+              <div>
+                <span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${comp.price}</span>
+                <span style={{ fontSize:13, color:G500 }}>/mo</span>
+              </div>
+              <div style={{ fontSize:13, color:G500, marginTop:4 }}>
+                for {comp.includedAmountMonthly} {comp.feature} / {recurrence}
+              </div>
             </div>
-          </div>
-        )
-      } else if (monthly && comp.price) {
-        priceDisplay = <><span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${comp.price}</span><span style={{ fontSize:13, color:G500 }}>/{comp.featureType==='mutable'?`${comp.unitLabel}/`:''}mo</span></>
-      } else if (annual && comp.priceAnnual) {
-        priceDisplay = <><span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${comp.priceAnnual}</span><span style={{ fontSize:13, color:G500 }}>/yr</span></>
+          )
+        } else if (comp.billingCycle === 'annual' && comp.priceAnnual) {
+          const recurrence = comp.recurrenceAnnual === 'daily' ? 'day' : comp.recurrenceAnnual === 'monthly' ? 'month' : 'year'
+          priceDisplay = (
+            <div>
+              <div>
+                <span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${comp.priceAnnual}</span>
+                <span style={{ fontSize:13, color:G500 }}>/yr</span>
+              </div>
+              <div style={{ fontSize:13, color:G500, marginTop:4 }}>
+                for {comp.includedAmountAnnual} {comp.feature} / {recurrence}
+              </div>
+            </div>
+          )
+        }
+
+        // Describe the metered quantity subscription details
+        if (hasBoth) {
+          const recurrenceMonthly = comp.recurrenceMonthly === 'daily' ? 'daily' : 'monthly'
+          const recurrenceAnnual = comp.recurrenceAnnual === 'daily' ? 'daily' : comp.recurrenceAnnual === 'monthly' ? 'monthly' : 'yearly'
+          includes.push(`For monthly billing, allowance refreshes ${recurrenceMonthly}`)
+          includes.push(`For annual billing, allowance refreshes ${recurrenceAnnual}`)
+        } else {
+          const recurrence = comp.billingCycle === 'monthly'
+            ? (comp.recurrenceMonthly === 'daily' ? 'daily' : 'monthly')
+            : (comp.recurrenceAnnual === 'daily' ? 'daily' : comp.recurrenceAnnual === 'monthly' ? 'monthly' : 'yearly')
+          includes.push(`Allowance refreshes ${recurrence}`)
+        }
+
+        if (comp.timing === 'advance') includes.push('Charged at the start of each billing period')
+        if (comp.timing === 'arrears') includes.push('Charged at the end of each billing period')
+        if (comp.overage === 'hardstop') includes.push(`Hard stop when allowance runs out`)
+        if (comp.overage === 'payg') includes.push(`Overage billed monthly: $${comp.overageRate} per extra ${comp.feature}`)
+        if (comp.rollover === false) includes.push(`No rollover — use it or lose it`)
+        if (comp.rollover === true) includes.push(`Rollover: up to ${comp.rollCap}${comp.rollCapType === 'multiplier' ? '× allowance' : ` ${comp.feature}`}`)
+      } else {
+        // Original flow for access or mutable quantity
+        const hasBoth = comp.cycle==='both' && comp.price && comp.priceAnnual
+        const monthly = comp.cycle!=='annual'
+        const annual = comp.cycle!=='monthly'
+
+        if (hasBoth) {
+          // Show both prices with savings
+          const savings = Math.round((1-(comp.priceAnnual/12)/comp.price)*100)
+          priceDisplay = (
+            <div>
+              <div>
+                <span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${comp.price}</span>
+                <span style={{ fontSize:13, color:G500 }}>/{comp.featureType==='mutable'?`${comp.unitLabel}/`:''}mo</span>
+              </div>
+              <div style={{ fontSize:14, color:G500, marginTop:6 }}>
+                or ${comp.priceAnnual}/{comp.featureType==='mutable'?`${comp.unitLabel}/`:''}yr
+                {savings > 0 && <span style={{ color:GREEN, marginLeft:8 }}>· save {savings}%</span>}
+              </div>
+            </div>
+          )
+        } else if (monthly && comp.price) {
+          priceDisplay = <><span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${comp.price}</span><span style={{ fontSize:13, color:G500 }}>/{comp.featureType==='mutable'?`${comp.unitLabel}/`:''}mo</span></>
+        } else if (annual && comp.priceAnnual) {
+          priceDisplay = <><span style={{ fontSize:36, fontWeight:700, color:G900, letterSpacing:'-0.02em' }}>${comp.priceAnnual}</span><span style={{ fontSize:13, color:G500 }}>/yr</span></>
+        }
+        if (comp.whatGet==='access') includes.push('Full product access')
+        if (comp.whatGet==='quantity' && comp.feature) {
+          if (comp.featureType==='mutable') includes.push(`Priced per ${comp.unitLabel}`)
+          if (comp.featureType==='metered' && comp.quantity) includes.push(`${comp.quantity} ${comp.feature} included / period`)
+        }
+        if (comp.timing==='advance') includes.push('Billed at the start of each period')
+        if (comp.timing==='arrears') includes.push('Billed at the end of each period')
+        if (comp.overage==='hardstop') includes.push(`Usage stops when ${comp.feature} runs out`)
+        if (comp.overage==='payg') includes.push(`Overage: $${comp.overageRate} / extra unit`)
+        if (comp.rollover) includes.push(`Rollover: up to ${comp.rollCap}${comp.rollCapType==='multiplier'?'× monthly allocation':` ${comp.feature}`}`)
       }
-      if (comp.whatGet==='access') includes.push('Full product access')
-      if (comp.whatGet==='quantity' && comp.feature) {
-        if (comp.featureType==='mutable') includes.push(`Priced per ${comp.unitLabel}`)
-        if (comp.featureType==='metered' && comp.quantity) includes.push(`${comp.quantity} ${comp.feature} included / period`)
-      }
-      if (comp.timing==='advance') includes.push('Billed at the start of each period')
-      if (comp.timing==='arrears') includes.push('Billed at the end of each period')
-      if (comp.overage==='hardstop') includes.push(`Usage stops when ${comp.feature} runs out`)
-      if (comp.overage==='payg') includes.push(`Overage: $${comp.overageRate} / extra unit`)
-      if (comp.rollover) includes.push(`Rollover: up to ${comp.rollCap}${comp.rollCapType==='multiplier'?'× monthly allocation':` ${comp.feature}`}`)
     }
 
     if (comp.type==='payg') {
       cta = 'Enable'
-      priceDisplay = <span style={{ fontSize:16, fontWeight:600, color:G700 }}>Usage-based</span>
+      priceDisplay = <span style={{ fontSize:16, fontWeight:600, color:G700 }}>Pay-as-you-go</span>
+
+      // Separate simple and complex pricing models
+      const simpleResources = []
+      const complexResources = []
+
       comp.resources?.forEach(r => {
         if (!r.resource) return
+        if (r.model === 'graduated' || r.model === 'volume') {
+          complexResources.push(r)
+        } else {
+          simpleResources.push(r)
+        }
+      })
+
+      // Show simple pricing models as checkmarks
+      simpleResources.forEach(r => {
         let p = ''
         if (r.model==='perunit') p = `$${r.price} per unit`
         else if (r.model==='block') p = `$${r.blockPrice} per ${r.blockSize} units`
-        else if (r.model==='graduated') p = `Graduated — ${r.tiers.length} tiers`
-        else p = `Volume — ${r.tiers.length} tiers`
         includes.push(`${r.resource}: ${p}`)
       })
+
       includes.push('Billed monthly · In arrears')
     }
 
@@ -689,7 +1289,7 @@ function SummaryPanel({ isFree, components, trial }) {
 
     if (comp.type==='mfc') {
       cta = 'Contact sales'
-      priceDisplay = <span style={{ fontSize:14, fontWeight:500, color:G700 }}>Negotiated commitment</span>
+      priceDisplay = <span style={{ fontSize:14, fontWeight:500, color:G700 }}>Minimum fee commitment (negotiated per customer)</span>
       const offeringNames = comp.offerings?.map(id => activeOfferings.find(o=>o.id===id)?.name).filter(Boolean) || []
       includes.push(`Eligible offerings: ${offeringNames.join(', ')}`)
       const disc = Object.entries(comp.discounts||{}).filter(([,v])=>v)
@@ -698,16 +1298,28 @@ function SummaryPanel({ isFree, components, trial }) {
         if (offering) includes.push(`${offering.name}: ${v}% off list price`)
       })
       else includes.push('Standard rates apply')
-      includes.push('Commitment amount agreed per customer')
+      includes.push('Commitment amount and term agreed per customer')
     }
+
+    // Collect complex resources for PAYG pricing tables
+    const complexResources = comp.type === 'payg'
+      ? comp.resources?.filter(r => r.resource && (r.model === 'graduated' || r.model === 'volume')) || []
+      : []
 
     return (
       <div key={i} style={sep}>
         {isAddon && <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>ADD-ON: {typeLabel}</div>}
         {priceDisplay && <div style={{ marginBottom:isFirst?16:12 }}>{priceDisplay}</div>}
-        {isFirst && includes.length>0 && <><Divider mt={0} mb={14}/><div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>WHAT'S INCLUDED</div></>}
-        {isAddon && includes.length>0 && <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:10, marginBottom:10 }}>WHAT'S INCLUDED</div>}
+        {isFirst && includes.length>0 && <><Divider mt={0} mb={14}/><div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>HOW IT WORKS</div></>}
+        {isAddon && includes.length>0 && <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:10, marginBottom:10 }}>HOW IT WORKS</div>}
         {includes.map((l,j)=><div key={j} style={{ fontSize:13, color:G900, marginBottom:8 }}><Check/>{l}</div>)}
+        {complexResources.length > 0 && (
+          <>
+            {complexResources.map((r, idx) => (
+              <PricingTable key={idx} resource={r.resource} model={r.model} tiers={r.tiers} />
+            ))}
+          </>
+        )}
       </div>
     )
   }
@@ -715,7 +1327,7 @@ function SummaryPanel({ isFree, components, trial }) {
   return (
     <div style={{ border:`1px solid ${G200}`, borderRadius:8, padding:32, maxWidth:720 }}>
       <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14 }}>
-        {components.length === 1 ? 'YOUR OFFERING' : 'YOUR OFFERING + ADD-ONS'}
+        {components.length === 1 ? displayName.toUpperCase() : `${displayName.toUpperCase()} + ADD-ONS`}
       </div>
       {components.map((comp, i) => renderComponent(comp, i, components.length))}
       {trial && (
@@ -746,7 +1358,9 @@ function doExport(config) {
 
 // ─── Main Wizard ─────────────────────────────────────────────────────────────
 export default function PricingPlayground() {
+  const [offeringName, setOfferingName] = useState('')
   const [isFree, setIsFree] = useState(null)
+  const [freeOptIn, setFreeOptIn] = useState(null) // 'automatic' or 'optin'
   const [components, setComponents] = useState([])
   const [activeType, setActiveType] = useState(null)
   const [showPicker, setShowPicker] = useState(false)
@@ -755,6 +1369,27 @@ export default function PricingPlayground() {
   const [sessionMetered, setSessionMetered] = useState([])
   const [sessionMutable, setSessionMutable] = useState([])
   const [editIndex, setEditIndex] = useState(null)
+  const [editingComponent, setEditingComponent] = useState(null)
+  const formRef = useRef(null)
+  const freeOptInRef = useRef(null)
+
+  // Scroll to form when strategy is selected
+  useEffect(() => {
+    if (activeType && formRef.current) {
+      setTimeout(() => {
+        formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100) // Small delay to let the Fade animation start
+    }
+  }, [activeType])
+
+  // Scroll to opt-in question when free is selected
+  useEffect(() => {
+    if (isFree === true && freeOptInRef.current) {
+      setTimeout(() => {
+        freeOptInRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }, [isFree])
 
   // Dummy metered resources organized by category
   const baseMeteredResources = [
@@ -822,7 +1457,20 @@ export default function PricingPlayground() {
 
   const handleFree = (free) => {
     setIsFree(free)
-    if (!free) { setShowPicker(true); setActiveType(null) }
+    setFreeOptIn(null) // Reset opt-in choice when changing free/paid
+
+    // Clear all paid-related state when switching
+    setComponents([])
+    setActiveType(null)
+    setTrial(null)
+    setShowTrial(false)
+    setEditIndex(null)
+
+    if (!free) {
+      setShowPicker(true)
+    } else {
+      setShowPicker(false)
+    }
   }
 
   const handleStratDone = (config) => {
@@ -832,22 +1480,27 @@ export default function PricingPlayground() {
     } else {
       setComponents(p=>[...p,config])
     }
-    setActiveType(null); setShowPicker(false)
+    setActiveType(null)
+    setShowPicker(false)
+    setEditingComponent(null)
   }
 
   const handleEdit = (i) => {
-    setEditIndex(i); setActiveType(components[i].type)
-    setComponents(p=>p.filter((_,j)=>j!==i))
-    setShowPicker(false)
+    const comp = components[i]
+    setEditIndex(i)
+    setActiveType(comp.type)
+    setEditingComponent(comp)
+    setShowPicker(true) // Show picker so user can change strategy if desired
   }
 
-  const isDone = isFree || (components.length>0 && !activeType && !showPicker)
+  const isDone = (isFree && freeOptIn) || (components.length>0 && !activeType && !showPicker)
+  const getInitialData = (type) => (editingComponent?.type === type ? editingComponent : null)
   const stratForms = {
-    subscription: <SubscriptionForm onDone={handleStratDone} allMetered={allMetered} allMutable={allMutable} onCreateMetered={n=>setSessionMetered(p=>[...p,n])} onCreateMutable={f=>setSessionMutable(p=>[...p,f])}/>,
-    payg: <PAYGForm onDone={handleStratDone} allMetered={allMetered} onCreateMetered={n=>setSessionMetered(p=>[...p,n])}/>,
-    prepaid: <PrepaidForm onDone={handleStratDone} allMetered={allMetered} onCreateMetered={n=>setSessionMetered(p=>[...p,n])}/>,
-    onetime: <OneTimeForm onDone={handleStratDone}/>,
-    mfc: <MFCForm onDone={handleStratDone}/>,
+    subscription: <SubscriptionForm onDone={handleStratDone} allMetered={allMetered} allMutable={allMutable} onCreateMetered={n=>setSessionMetered(p=>[...p,n])} onCreateMutable={f=>setSessionMutable(p=>[...p,f])} initialData={getInitialData('subscription')}/>,
+    payg: <PAYGForm onDone={handleStratDone} allMetered={allMetered} onCreateMetered={n=>setSessionMetered(p=>[...p,n])} initialData={getInitialData('payg')}/>,
+    prepaid: <PrepaidForm onDone={handleStratDone} allMetered={allMetered} onCreateMetered={n=>setSessionMetered(p=>[...p,n])} initialData={getInitialData('prepaid')}/>,
+    onetime: <OneTimeForm onDone={handleStratDone} initialData={getInitialData('onetime')}/>,
+    mfc: <MFCForm onDone={handleStratDone} initialData={getInitialData('mfc')}/>,
   }
 
   return (
@@ -863,17 +1516,55 @@ export default function PricingPlayground() {
         <h1 style={{ fontSize:20, fontWeight:600, color:G900, margin:'0 0 4px', letterSpacing:'-0.02em' }}>Pricing strategy</h1>
         <div style={{ fontSize:13, color:G500, marginBottom:32 }}>Configure how customers will be charged for this offering.</div>
 
+        {/* Offering name */}
+        <Fade>
+          <div style={{ marginBottom:28 }}>
+            <Label hint="optional">Offering name</Label>
+            <Input
+              type="text"
+              placeholder="Your offering"
+              value={offeringName}
+              onChange={e=>setOfferingName(e.target.value)}
+              style={{ maxWidth:400 }}
+            />
+          </div>
+        </Fade>
+
         {/* Step 1 */}
         <Fade>
           <SectionQ>Is this offering free or paid?</SectionQ>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            <SelCard title="Free" desc="No purchase required. Customers access automatically." selected={isFree===true} onClick={()=>handleFree(true)}/>
-            <SelCard title="Paid" desc="Customers must purchase before accessing." selected={isFree===false} onClick={()=>handleFree(false)}/>
+            <SelCard title="Free" desc="No purchase required." selected={isFree===true} onClick={()=>handleFree(true)}/>
+            <SelCard title="Paid" desc="This offering has a cost — customers may be charged before, or after use." selected={isFree===false} onClick={()=>handleFree(false)}/>
           </div>
         </Fade>
 
+        {/* Step 1b - Free opt-in behavior */}
+        {isFree===true && (
+          <Fade key="free-optin">
+            <div ref={freeOptInRef}>
+              <Divider />
+              <SectionQ>How do customers access this free offering?</SectionQ>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                <SelCard
+                  title="Automatic access"
+                  desc="Everyone gets it by default. No action needed."
+                  selected={freeOptIn==='automatic'}
+                  onClick={()=>setFreeOptIn('automatic')}
+                />
+                <SelCard
+                  title="Opt-in required"
+                  desc="Customers must explicitly activate or sign up."
+                  selected={freeOptIn==='optin'}
+                  onClick={()=>setFreeOptIn('optin')}
+                />
+              </div>
+            </div>
+          </Fade>
+        )}
+
         {/* Completed components */}
-        {components.length>0 && (
+        {isFree===false && components.length>0 && (
           <Fade key={`c${components.length}`}>
             <Divider />
             {components.map((comp,i)=>(
@@ -883,31 +1574,33 @@ export default function PricingPlayground() {
         )}
 
         {/* Strategy picker */}
-        {showPicker && (
+        {isFree===false && showPicker && (
           <Fade key="picker">
             <Divider />
             <SectionQ>{components.length === 0 ? 'Choose a pricing strategy' : 'Choose add-on pricing strategy'}</SectionQ>
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom: activeType ? 20 : 0 }}>
               {STRATEGIES.map(s=>(
-                <SelCard key={s.id} title={s.label} desc={s.desc} selected={activeType===s.id} onClick={()=>{ setActiveType(s.id); setShowPicker(false) }}/>
+                <SelCard key={s.id} title={s.label} desc={s.desc} selected={activeType===s.id} onClick={()=>setActiveType(s.id)}/>
               ))}
             </div>
-          </Fade>
-        )}
 
-        {/* Active form */}
-        {activeType && (
-          <Fade key={`f-${activeType}-${editIndex}`}>
-            <Divider />
-            <div style={{ fontSize:14, fontWeight:600, color:G900, marginBottom:16 }}>
-              {STRATEGIES.find(s=>s.id===activeType)?.label}
-            </div>
-            {stratForms[activeType]}
+            {/* Active form - shown below strategy cards */}
+            {activeType && (
+              <Fade key={`f-${activeType}-${editIndex}`}>
+                <div ref={formRef}>
+                  <Divider mt={0} mb={16}/>
+                  <div style={{ fontSize:14, fontWeight:600, color:G900, marginBottom:16 }}>
+                    {STRATEGIES.find(s=>s.id===activeType)?.label}
+                  </div>
+                  {stratForms[activeType]}
+                </div>
+              </Fade>
+            )}
           </Fade>
         )}
 
         {/* Post-strategy actions */}
-        {isDone && !isFree && !showPicker && !activeType && (
+        {isFree===false && isDone && !showPicker && !activeType && (
           <Fade key="post">
             <Divider />
             <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:16 }}>
@@ -933,7 +1626,7 @@ export default function PricingPlayground() {
             <Divider mt={20} mb={0}/>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:20 }}>
               <div style={{ fontSize:12, color:G500 }}>Export configuration as JSON</div>
-              <button onClick={()=>doExport({ isFree, components, trial })} style={{ background:G900, color:'#fff', border:'none', borderRadius:4, padding:'8px 14px', fontSize:12, fontWeight:500, cursor:'pointer', display:'flex', alignItems:'center', gap:6, fontFamily:'inherit' }}>
+              <button onClick={()=>doExport({ offeringName: offeringName.trim() || 'Your offering', isFree, freeOptIn, components, trial })} style={{ background:G900, color:'#fff', border:'none', borderRadius:4, padding:'8px 14px', fontSize:12, fontWeight:500, cursor:'pointer', display:'flex', alignItems:'center', gap:6, fontFamily:'inherit' }}>
                 <svg viewBox="0 0 15 15" width="11" height="11"><path d="M7.5 1v9m-3-3 3 3 3-3M2 11v3h11v-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 Export config
               </button>
@@ -941,12 +1634,12 @@ export default function PricingPlayground() {
           </Fade>
         )}
 
-        {isFree && (
+        {isFree && freeOptIn && (
           <Fade key="free-export">
             <Divider />
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div style={{ fontSize:12, color:G500 }}>Export configuration as JSON</div>
-              <button onClick={()=>doExport({ isFree, components:[], trial:null })} style={{ background:G900, color:'#fff', border:'none', borderRadius:4, padding:'8px 14px', fontSize:12, fontWeight:500, cursor:'pointer', display:'flex', alignItems:'center', gap:6, fontFamily:'inherit' }}>
+              <button onClick={()=>doExport({ offeringName: offeringName.trim() || 'Your offering', isFree, freeOptIn, components:[], trial:null })} style={{ background:G900, color:'#fff', border:'none', borderRadius:4, padding:'8px 14px', fontSize:12, fontWeight:500, cursor:'pointer', display:'flex', alignItems:'center', gap:6, fontFamily:'inherit' }}>
                 <svg viewBox="0 0 15 15" width="11" height="11"><path d="M7.5 1v9m-3-3 3 3 3-3M2 11v3h11v-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 Export config
               </button>
@@ -961,7 +1654,7 @@ export default function PricingPlayground() {
           <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>CUSTOMER VIEW</div>
           <div style={{ fontSize:12, color:G400, lineHeight:1.6 }}>This is how customers will see and understand this offering. The right panel is the deliverable.</div>
         </div>
-        <SummaryPanel isFree={isFree} components={components} trial={trial}/>
+        <SummaryPanel offeringName={offeringName} isFree={isFree} freeOptIn={freeOptIn} components={components} trial={trial}/>
       </div>
     </div>
   )
