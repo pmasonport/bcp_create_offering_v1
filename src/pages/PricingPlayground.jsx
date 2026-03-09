@@ -367,7 +367,7 @@ function MultiSelect({ items, selected, onChange, placeholder = 'Select...' }) {
 }
 
 // ─── Strategy Forms ─────────────────────────────────────────────────────────
-function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onCreateMutable, initialData }) {
+function SubscriptionForm({ onDone, onDraftChange, allMetered, allMutable, onCreateMetered, onCreateMutable, initialData }) {
   const [c, setC] = useState(initialData || {
     whatGet:null,
     feature:null,
@@ -388,7 +388,17 @@ function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onC
     includedAmountMonthly:'',
     includedAmountAnnual:''
   })
-  const upd = (k,v) => setC(p=>({...p,[k]:v}))
+  const upd = (k,v) => {
+    const newState = {...c, [k]: v}
+    setC(newState)
+    if (onDraftChange) {
+      onDraftChange({
+        type: 'subscription',
+        monetization_strategy: 'subscription',
+        ...newState
+      })
+    }
+  }
 
   const featureType = (f) => allMetered.find(m=>m.name===f) ? 'metered' : 'mutable'
   const unitLabel = (f) => allMutable.find(m=>m.name===f)?.unit || 'unit'
@@ -782,12 +792,22 @@ function SubscriptionForm({ onDone, allMetered, allMutable, onCreateMetered, onC
   )
 }
 
-function PAYGForm({ onDone, allMetered, onCreateMetered, initialData }) {
+function PAYGForm({ onDone, onDraftChange, allMetered, onCreateMetered, initialData }) {
   const empty = () => ({ resource:'', model:'perunit', price:'', blockSize:'', blockPrice:'', tiers:[{min:'0',max:'',price:''}] })
   const [resources, setResources] = useState(initialData?.resources || [empty()])
-  const upd = (i,k,v) => setResources(r=>r.map((x,j)=>j===i?{...x,[k]:v}:x))
+  const upd = (i,k,v) => {
+    const newResources = resources.map((x,j)=>j===i?{...x,[k]:v}:x)
+    setResources(newResources)
+    if (onDraftChange) {
+      onDraftChange({
+        type: 'payg',
+        monetization_strategy: 'payg',
+        resources: newResources
+      })
+    }
+  }
   const updTier = (ri,ti,k,v) => {
-    setResources(r=>r.map((x,j)=>j===ri?{
+    const newResources = resources.map((x,j)=>j===ri?{
       ...x,
       tiers:x.tiers.map((t,ki)=>{
         if (ki===ti) {
@@ -802,16 +822,34 @@ function PAYGForm({ onDone, allMetered, onCreateMetered, initialData }) {
         }
         return t
       })
-    }:x))
-  }
-  const addTier = ri => setResources(r=>r.map((x,j)=>{
-    if (j===ri) {
-      const lastTier = x.tiers[x.tiers.length - 1]
-      const newMin = lastTier?.max ? String(parseFloat(lastTier.max) + 1) : ''
-      return {...x, tiers:[...x.tiers, {min:newMin, max:'', price:''}]}
+    }:x)
+    setResources(newResources)
+    if (onDraftChange) {
+      onDraftChange({
+        type: 'payg',
+        monetization_strategy: 'payg',
+        resources: newResources
+      })
     }
-    return x
-  }))
+  }
+  const addTier = ri => {
+    const newResources = resources.map((x,j)=>{
+      if (j===ri) {
+        const lastTier = x.tiers[x.tiers.length - 1]
+        const newMin = lastTier?.max ? String(parseFloat(lastTier.max) + 1) : ''
+        return {...x, tiers:[...x.tiers, {min:newMin, max:'', price:''}]}
+      }
+      return x
+    })
+    setResources(newResources)
+    if (onDraftChange) {
+      onDraftChange({
+        type: 'payg',
+        monetization_strategy: 'payg',
+        resources: newResources
+      })
+    }
+  }
 
   const isResourceValid = (r) => {
     if (!r.resource) return false
@@ -898,10 +936,30 @@ function PAYGForm({ onDone, allMetered, onCreateMetered, initialData }) {
   )
 }
 
-function PrepaidForm({ onDone, allMetered, onCreateMetered, initialData }) {
+function PrepaidForm({ onDone, onDraftChange, allMetered, onCreateMetered, initialData }) {
   const [c, setC] = useState(initialData || { resource:'', packs:[{qty:'',price:''}], expires:null, expiryMonths:'', stackable:null })
-  const upd = (k,v) => setC(p=>({...p,[k]:v}))
-  const updPack = (i,k,v) => setC(p=>({...p,packs:p.packs.map((x,j)=>j===i?{...x,[k]:v}:x)}))
+  const upd = (k,v) => {
+    const newState = {...c, [k]: v}
+    setC(newState)
+    if (onDraftChange) {
+      onDraftChange({
+        type: 'prepaid',
+        monetization_strategy: 'prepaid',
+        ...newState
+      })
+    }
+  }
+  const updPack = (i,k,v) => {
+    const newState = {...c, packs:c.packs.map((x,j)=>j===i?{...x,[k]:v}:x)}
+    setC(newState)
+    if (onDraftChange) {
+      onDraftChange({
+        type: 'prepaid',
+        monetization_strategy: 'prepaid',
+        ...newState
+      })
+    }
+  }
   const canDone = c.resource && c.packs.every(p=>p.qty&&p.price) && c.expires!==null && c.stackable!==null
 
   return (
@@ -980,9 +1038,19 @@ function PrepaidForm({ onDone, allMetered, onCreateMetered, initialData }) {
   )
 }
 
-function OneTimeForm({ onDone, initialData }) {
+function OneTimeForm({ onDone, onDraftChange, initialData }) {
   const [c, setC] = useState(initialData || { timing:null, price:'' })
-  const upd = (k,v) => setC(p=>({...p,[k]:v}))
+  const upd = (k,v) => {
+    const newState = {...c, [k]: v}
+    setC(newState)
+    if (onDraftChange) {
+      onDraftChange({
+        type: 'onetime',
+        monetization_strategy: 'onetime',
+        ...newState
+      })
+    }
+  }
   const canDone = c.timing && c.price
   return (
     <div>
@@ -1022,10 +1090,22 @@ function OneTimeForm({ onDone, initialData }) {
   )
 }
 
-function MFCForm({ onDone, initialData }) {
+function MFCForm({ onDone, onDraftChange, initialData }) {
   const activeOfferings = OFFERINGS.filter(o => o.status === 'active')
   const [offerings, setOfferings] = useState(initialData?.offerings || [])
   const [discounts, setDiscounts] = useState(initialData?.discounts || {})
+
+  // Helper to send draft updates
+  const sendDraftUpdate = (newOfferings, newDiscounts) => {
+    if (onDraftChange) {
+      onDraftChange({
+        type: 'mfc',
+        monetization_strategy: 'mfc',
+        offerings: newOfferings,
+        discounts: newDiscounts
+      })
+    }
+  }
   const canDone = offerings.length > 0
   return (
     <div>
@@ -1036,7 +1116,10 @@ function MFCForm({ onDone, initialData }) {
           <MultiSelect
             items={activeOfferings}
             selected={offerings}
-            onChange={setOfferings}
+            onChange={(newOfferings) => {
+              setOfferings(newOfferings)
+              sendDraftUpdate(newOfferings, discounts)
+            }}
             placeholder="Select offerings..."
           />
         </div>
@@ -1053,7 +1136,11 @@ function MFCForm({ onDone, initialData }) {
               return (
                 <div key={o.id} style={{ display:'flex', alignItems:'center', gap:12, marginBottom:10 }}>
                   <span style={{ fontSize:13, color:G700, minWidth:200 }}>{o.name}</span>
-                  <Input type="number" min="0" max="100" placeholder="0" value={discounts[o.id]||''} onChange={e=>setDiscounts(p=>({...p,[o.id]:e.target.value}))} style={{ width:70 }}/>
+                  <Input type="number" min="0" max="100" placeholder="0" value={discounts[o.id]||''} onChange={e=>{
+                    const newDiscounts = {...discounts, [o.id]:e.target.value}
+                    setDiscounts(newDiscounts)
+                    sendDraftUpdate(offerings, newDiscounts)
+                  }} style={{ width:70 }}/>
                   <span style={{ fontSize:12, color:G500 }}>% off</span>
                 </div>
               )
@@ -1075,10 +1162,24 @@ function MFCForm({ onDone, initialData }) {
 }
 
 // ─── Trial Form ─────────────────────────────────────────────────────────────
-function TrialForm({ onDone }) {
+function TrialForm({ onDone, onDraftChange }) {
   const [type, setType] = useState(null)
   const [c, setC] = useState({})
-  const upd = (k,v) => setC(p=>({...p,[k]:v}))
+  const upd = (k,v) => {
+    const newState = {...c, [k]: v}
+    setC(newState)
+    if (onDraftChange && type) {
+      onDraftChange({ type, ...newState })
+    }
+  }
+
+  const handleTypeChange = (newType) => {
+    setType(newType)
+    setC({})
+    if (onDraftChange) {
+      onDraftChange({ type: newType })
+    }
+  }
   const TYPES = [
     { id:'timed', label:'Free trial (time-based)', desc:'Full access for N days, then normal billing or a free tier.' },
     { id:'reverse', label:'Reverse trial (auto-downgrade)', desc:'Start with premium access, auto-downgrade to a lower tier at the end.' },
@@ -1092,7 +1193,7 @@ function TrialForm({ onDone }) {
       <Fade>
         <SectionQ>Trial type</SectionQ>
         <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:16 }}>
-          {TYPES.map(t=><SelCard key={t.id} title={t.label} desc={t.desc} selected={type===t.id} onClick={()=>{setType(t.id);setC({})}}/>)}
+          {TYPES.map(t=><SelCard key={t.id} title={t.label} desc={t.desc} selected={type===t.id} onClick={()=>handleTypeChange(t.id)}/>)}
         </div>
       </Fade>
 
@@ -1299,8 +1400,191 @@ function PricingTable({ resource, model, tiers }) {
   )
 }
 
+// ─── Draft Skeleton Renderer ────────────────────────────────────────────────
+function renderDraftSkeleton(draft) {
+  if (!draft || !draft.type) return null
+
+  const typeLabel = {
+    subscription: 'Subscription',
+    payg: 'Pay as you go',
+    prepaid: 'Prepaid',
+    onetime: 'One-time',
+    mfc: 'Min. Fee Commitment'
+  }[draft.type] || 'Pricing Component'
+
+  const Field = ({ label, value, sub }) => {
+    if (!value && value !== 0) return null
+    return (
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: G500, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>{label}</div>
+        <div style={{ fontSize: 14, color: G900, lineHeight: 1.5 }}>{value}</div>
+        {sub && <div style={{ fontSize: 12, color: G500, marginTop: 2 }}>{sub}</div>}
+      </div>
+    )
+  }
+
+  // Subscription details
+  if (draft.type === 'subscription') {
+    const whatGetLabel = {
+      access: 'Access',
+      quantity: draft.feature ? `${draft.quantity || '—'} ${draft.feature}` : 'Quantity-based'
+    }[draft.whatGet]
+
+    const timingLabel = { advance: 'In advance', arrears: 'In arrears' }[draft.timing]
+    const cycleLabel = { monthly: 'Monthly', annual: 'Annual', both: 'Monthly & Annual' }[draft.cycle]
+
+    // Price display with feature name for quantity-based
+    const isQuantityBased = draft.whatGet === 'quantity' && draft.feature
+    const perUnit = isQuantityBased ? ` per ${draft.feature.toLowerCase().replace(/s$/, '')}` : ''
+
+    const priceDisplay = draft.cycle === 'both'
+      ? `$${draft.price || '—'}${perUnit}/mo or $${draft.priceAnnual || '—'}${perUnit}/yr`
+      : draft.cycle === 'monthly' && draft.price
+      ? `$${draft.price}${perUnit}/mo`
+      : draft.cycle === 'annual' && draft.priceAnnual
+      ? `$${draft.priceAnnual}${perUnit}/yr`
+      : '—'
+
+    return (
+      <div>
+        <Field label="What customers get" value={whatGetLabel} />
+        <Field label="Billing cycle" value={cycleLabel} />
+        <Field label="Payment timing" value={timingLabel} />
+        <Field label="Price" value={priceDisplay} />
+        {draft.overage && <Field label="Overage" value={draft.overage === 'hardstop' ? 'Hard stop' : `$${draft.overageRate || '—'} per unit`} />}
+        {draft.rollover !== null && draft.rollover !== undefined && (
+          <Field label="Rollover" value={draft.rollover ? (draft.rollCapType === 'unlimited' ? 'Unlimited' : `Up to ${draft.rollCap || '—'}`) : 'No rollover'} />
+        )}
+      </div>
+    )
+  }
+
+  // PAYG details
+  if (draft.type === 'payg') {
+    return (
+      <div>
+        {draft.resources && draft.resources.length > 0 ? (
+          draft.resources.map((r, i) => (
+            <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: i < draft.resources.length - 1 ? `1px solid ${G200}` : 'none' }}>
+              <Field label="Resource" value={r.resource || '—'} />
+              <Field label="Pricing model" value={r.model === 'perunit' ? 'Per unit' : r.model === 'block' ? 'Block pricing' : 'Tiered'} />
+              {r.model === 'perunit' && <Field label="Price" value={r.price ? `$${r.price} per unit` : '—'} />}
+              {r.model === 'block' && (
+                <>
+                  <Field label="Block size" value={r.blockSize || '—'} />
+                  <Field label="Block price" value={r.blockPrice ? `$${r.blockPrice}` : '—'} />
+                </>
+              )}
+              {r.model === 'tiered' && r.tiers && (
+                <Field label="Tiers" value={`${r.tiers.length} tier${r.tiers.length !== 1 ? 's' : ''} configured`} />
+              )}
+            </div>
+          ))
+        ) : (
+          <div style={{ fontSize: 13, color: G500, fontStyle: 'italic' }}>No resources configured yet</div>
+        )}
+      </div>
+    )
+  }
+
+  // Prepaid details
+  if (draft.type === 'prepaid') {
+    return (
+      <div>
+        <Field label="Resource" value={draft.resource || '—'} />
+        {draft.packs && draft.packs.length > 0 && (
+          <Field
+            label="Credit packs"
+            value={draft.packs.map(p => p.qty && p.price ? `${p.qty} credits for $${p.price}` : 'Configuring...').join(' • ')}
+          />
+        )}
+        {draft.expires !== null && draft.expires !== undefined && (
+          <Field label="Credits expire" value={draft.expires ? `After ${draft.expiryMonths || '—'} months` : 'Never'} />
+        )}
+        {draft.stackable !== null && draft.stackable !== undefined && (
+          <Field label="Stackable" value={draft.stackable ? 'Yes' : 'No'} />
+        )}
+      </div>
+    )
+  }
+
+  // One-time details
+  if (draft.type === 'onetime') {
+    const timingLabel = { advance: 'In advance', arrears: 'In arrears' }[draft.timing]
+    return (
+      <div>
+        <Field label="Payment timing" value={timingLabel} />
+        <Field label="Price" value={draft.price ? `$${draft.price}` : '—'} />
+      </div>
+    )
+  }
+
+  // MFC details
+  if (draft.type === 'mfc') {
+    return (
+      <div>
+        {draft.offerings && draft.offerings.length > 0 ? (
+          <>
+            <Field label="Offerings in scope" value={`${draft.offerings.length} offering${draft.offerings.length !== 1 ? 's' : ''}`} />
+            {draft.discounts && Object.keys(draft.discounts).some(k => draft.discounts[k]) && (
+              <Field label="Discounts configured" value="Yes" />
+            )}
+          </>
+        ) : (
+          <div style={{ fontSize: 13, color: G500, fontStyle: 'italic' }}>No offerings selected yet</div>
+        )}
+      </div>
+    )
+  }
+
+  return null
+}
+
+// ─── Draft Preview Builder ─────────────────────────────────────────────────
+// Computes the draft preview object based on current configuration state
+function buildDraftPreview({
+  offeringType,
+  offeringName,
+  isFree,
+  compatibleWith,
+  activeType,
+  draftComponent,
+  editIndex,
+  showPicker,
+  showTrial,
+  components
+}) {
+  // If nothing configured yet, no draft
+  if (!offeringType) return null
+
+  // Determine the actual type being configured
+  let actualType = offeringType
+  if (showTrial) {
+    actualType = 'trial'
+  } else if (showPicker && components && components.length > 0) {
+    actualType = 'addon'
+  }
+
+  return {
+    // Offering-level info
+    offering: {
+      type: actualType,  // 'base', 'addon', or 'trial'
+      name: offeringName || null,
+      isFree: actualType === 'trial' ? null : isFree,  // Don't show free/paid for trials
+      compatibleWith: compatibleWith || [],
+      strategyType: activeType || null  // Currently selected strategy
+    },
+
+    // Pricing component info (if user is filling out a strategy form)
+    pricingComponent: draftComponent || null,
+
+    // Is this an edit operation?
+    isEditing: editIndex !== null
+  }
+}
+
 // ─── Summary Panel ──────────────────────────────────────────────────────────
-function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringName, isFree, freeOptIn, components, trial }) {
+function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringName, isFree, freeOptIn, components, trial, draftComponent, editIndex, activeType, showPicker, showTrial }) {
   const Check = () => <span style={{ color:GREEN, marginRight:8 }}>✓</span>
   const activeOfferings = OFFERINGS.filter(o => o.status === 'active')
   const displayName = offeringName.trim() || 'Your offering'
@@ -1310,20 +1594,221 @@ function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringN
     ? compatibleWith.map(id => allOfferings.find(o => o.id === id)).filter(Boolean)
     : []
 
-  if (!offeringType || isFree===null) return (
-    <div style={{ textAlign:'center', padding:'60px 16px' }}>
-      <div style={{ fontSize:28, marginBottom:12, opacity:0.3 }}>◻</div>
-      <div style={{ fontSize:13, color:G400, lineHeight:1.8 }}>Build your pricing on the left.<br/>The customer view will appear here.</div>
-    </div>
-  )
+  // Build draft preview object
+  const draft = buildDraftPreview({
+    offeringType,
+    offeringName,
+    isFree,
+    compatibleWith,
+    activeType,
+    draftComponent,
+    editIndex,
+    showPicker,
+    showTrial,
+    components
+  })
 
-  if (isFree && !freeOptIn) return (
-    <div style={{ textAlign:'center', padding:'60px 16px' }}>
-      <div style={{ fontSize:28, marginBottom:12, opacity:0.3 }}>◻</div>
-      <div style={{ fontSize:13, color:G400, lineHeight:1.8 }}>Choose how customers access<br/>this free offering.</div>
-    </div>
-  )
+  // Helper for field display
+  const Field = ({ label, value }) => {
+    return (
+      <div style={{ marginBottom: 8 }}>
+        <div style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: G500,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          marginBottom: 2
+        }}>
+          {label}
+        </div>
+        <div style={{ fontSize: 14, color: G900 }}>
+          {value}
+        </div>
+      </div>
+    )
+  }
 
+  // Renders offering-level draft
+  const OfferingDraft = ({ offering }) => {
+    const { type, name, isFree, compatibleWith, strategyType } = offering
+
+    const strategyLabels = {
+      subscription: 'Subscription',
+      payg: 'Pay as you go',
+      prepaid: 'Prepaid',
+      onetime: 'One-time',
+      mfc: 'Minimum Fee Commitment'
+    }
+
+    return (
+      <div>
+        {/* Offering type label */}
+        <div style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: G700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          marginBottom: 12
+        }}>
+          {type === 'trial' ? 'Free Trial' : type === 'addon' ? 'Add-on' : 'Base Offering'}
+        </div>
+
+        {/* Name (if entered) */}
+        {name && (
+          <Field label="Name" value={name} />
+        )}
+
+        {/* Free/Paid status (if selected) */}
+        {isFree !== null && (
+          <Field label="Type" value={isFree ? 'Free' : 'Paid'} />
+        )}
+
+        {/* Monetization strategy (if selected) */}
+        {strategyType && (
+          <Field label="Monetization strategy" value={strategyLabels[strategyType] || strategyType} />
+        )}
+
+        {/* Compatible offerings (for add-ons) */}
+        {type === 'addon' && compatibleWith?.length > 0 && (
+          <Field
+            label="Compatible with"
+            value={`${compatibleWith.length} offering${compatibleWith.length !== 1 ? 's' : ''}`}
+          />
+        )}
+
+        {/* Hint text */}
+        {isFree === null && (
+          <div style={{
+            marginTop: 12,
+            paddingTop: 12,
+            borderTop: `1px solid ${G300}`,
+            fontSize: 12,
+            color: G500,
+            fontStyle: 'italic'
+          }}>
+            Continue filling out the form below
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Renders the unified draft preview box
+  const DraftPreviewBox = ({ draft, message }) => {
+    if (!draft) return null
+
+    const { offering, pricingComponent, isEditing } = draft
+
+    // Check if pricingComponent has actual field data (not just type)
+    const hasDetailedData = pricingComponent && (() => {
+      if (pricingComponent.type === 'subscription') {
+        return pricingComponent.whatGet || pricingComponent.cycle || pricingComponent.price
+      }
+      if (pricingComponent.type === 'payg') {
+        return pricingComponent.resources && pricingComponent.resources.some(r => r.resource || r.price)
+      }
+      if (pricingComponent.type === 'prepaid') {
+        return pricingComponent.resource || (pricingComponent.packs && pricingComponent.packs.some(p => p.qty || p.price))
+      }
+      if (pricingComponent.type === 'onetime') {
+        return pricingComponent.timing || pricingComponent.price
+      }
+      if (pricingComponent.type === 'mfc') {
+        return pricingComponent.offerings && pricingComponent.offerings.length > 0
+      }
+      return false
+    })()
+
+    return (
+      <div style={{
+        padding: '20px',
+        background: '#FAFAFA',
+        border: `2px dashed ${G400}`,
+        borderRadius: 8,
+        position: 'relative',
+        marginBottom: hasDetailedData ? 16 : 0
+      }}>
+        {/* Draft badge */}
+        <div style={{
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          fontSize: 10,
+          fontWeight: 600,
+          color: G700,
+          background: '#fff',
+          padding: '4px 10px',
+          borderRadius: 4,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          border: `1px solid ${G400}`
+        }}>
+          {isEditing ? 'Editing' : 'Draft'}
+        </div>
+
+        {/* Optional message */}
+        {message && (
+          <div style={{
+            fontSize: 12,
+            color: G500,
+            marginBottom: 12,
+            fontStyle: 'italic'
+          }}>
+            {message}
+          </div>
+        )}
+
+        {/* Offering-level draft */}
+        <OfferingDraft offering={offering} />
+
+        {/* Pricing component draft (only if form has actual data filled) */}
+        {hasDetailedData && renderDraftSkeleton(pricingComponent)}
+      </div>
+    )
+  }
+
+  // EARLY RETURN 1: Nothing configured yet
+  if (!offeringType || isFree===null) {
+    if (draft) {
+      return (
+        <div style={{ padding: '24px' }}>
+          <DraftPreviewBox
+            draft={draft}
+            message="Preview will appear here once you complete the setup"
+          />
+        </div>
+      )
+    }
+
+    return (
+      <div style={{ textAlign:'center', padding:'60px 16px' }}>
+        <div style={{ fontSize:28, marginBottom:12, opacity:0.3 }}>◻</div>
+        <div style={{ fontSize:13, color:G400, lineHeight:1.8 }}>Build your pricing on the left.<br/>The customer view will appear here.</div>
+      </div>
+    )
+  }
+
+  // EARLY RETURN 2: Free offering waiting for opt-in selection
+  if (isFree && !freeOptIn) {
+    if (draft) {
+      return (
+        <div style={{ padding: '24px' }}>
+          <DraftPreviewBox draft={draft} />
+        </div>
+      )
+    }
+
+    return (
+      <div style={{ textAlign:'center', padding:'60px 16px' }}>
+        <div style={{ fontSize:28, marginBottom:12, opacity:0.3 }}>◻</div>
+        <div style={{ fontSize:13, color:G400, lineHeight:1.8 }}>Choose how customers access<br/>this free offering.</div>
+      </div>
+    )
+  }
+
+  // EARLY RETURN 3: Free offering complete (final state, no draft)
   if (isFree && freeOptIn) return (
     <div style={{ border:`1px solid ${G200}`, borderRadius:8, padding:24 }}>
       <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>{displayName.toUpperCase()}</div>
@@ -1340,13 +1825,19 @@ function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringN
     </div>
   )
 
-  if (components.length===0) return (
-    <div style={{ border:`1px dashed ${G300}`, borderRadius:8, padding:24, textAlign:'center' }}>
-      <div style={{ fontSize:13, color:G400, lineHeight:1.8 }}>Choose a pricing strategy on the left<br/>to see the customer view here.</div>
-    </div>
-  )
+  // EARLY RETURN 4: No pricing components added yet
+  if (components.length===0) {
+    return (
+      <div style={{ padding: '24px' }}>
+        <DraftPreviewBox
+          draft={draft}
+          message="Building your pricing..."
+        />
+      </div>
+    )
+  }
 
-  const renderComponent = (comp, i, total) => {
+  const renderComponent = (comp, i, total, isDraft = false) => {
     const isFirst = i===0
     const isAddon = !isFirst
     const sep = isAddon ? { borderTop:`1px solid ${G200}`, marginTop:20, paddingTop:20 } : {}
@@ -1654,57 +2145,77 @@ function SummaryPanel({ offeringType, compatibleWith, customOfferings, offeringN
     )
   }
 
-  return (
-    <div style={{
-      border:`1px solid ${G200}`,
-      borderRadius:12,
-      padding:32,
-      maxWidth:680,
-      background:'#fff',
-      boxShadow:'0 1px 3px rgba(0,0,0,0.05)'
-    }}>
-      {/* Add-on badge */}
-      {isAddon && (
-        <div style={{ display:'inline-block', padding:'4px 8px', background:BL, border:`1px solid ${B}`, borderRadius:4, fontSize:10, fontWeight:600, color:B, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12 }}>
-          Add-on
-        </div>
-      )}
+  // EDITING MODE: Show only the draft
+  if (editIndex !== null && draft) {
+    return (
+      <div style={{ padding: '24px' }}>
+        <DraftPreviewBox draft={draft} />
+      </div>
+    )
+  }
 
-      {/* Header */}
-      <div style={{ fontSize:12, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:16 }}>
-        {isAddon ? displayName.toUpperCase() :
-         components.length === 1 ? displayName.toUpperCase() : `${displayName.toUpperCase()} + ADD-ONS`}
+  // MAIN VIEW: Show completed components card
+  return (
+    <>
+      <div style={{
+        border:`1px solid ${G200}`,
+        borderRadius:12,
+        padding:32,
+        maxWidth:680,
+        background:'#fff',
+        boxShadow:'0 1px 3px rgba(0,0,0,0.05)'
+      }}>
+        {/* Add-on badge */}
+        {isAddon && (
+          <div style={{ display:'inline-block', padding:'4px 8px', background:BL, border:`1px solid ${B}`, borderRadius:4, fontSize:10, fontWeight:600, color:B, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12 }}>
+            Add-on
+          </div>
+        )}
+
+        {/* Header */}
+        <div style={{ fontSize:12, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:16 }}>
+          {isAddon ? displayName.toUpperCase() :
+           components.length === 1 ? displayName.toUpperCase() : `${displayName.toUpperCase()} + ADD-ONS`}
+        </div>
+
+        {components.map((comp, i) => renderComponent(comp, i, components.length))}
+
+        {trial && (
+          <>
+            <Divider mt={16} mb={14}/>
+            <div style={{ padding:'10px 12px', background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:4, fontSize:12, color:'#166534', lineHeight:1.6 }}>
+              {trial.type==='timed' && `✓ ${trial.days}-day free trial — then ${trial.after==='bill'?'normal billing':'downgrade to free tier'}`}
+              {trial.type==='reverse' && `✓ ${trial.days}-day premium trial — auto-downgrades to ${activeOfferings.find(o=>o.id===trial.downgradeTo)?.name || trial.downgradeTo}`}
+              {trial.type==='cap' && `✓ Free up to $${trial.cap} of usage — then ${trial.after==='bill'?'normal billing':'service suspended'}`}
+            </div>
+          </>
+        )}
+        <Divider mt={20} mb={20}/>
+        <button style={{
+          width:'100%',
+          padding:'12px 16px',
+          background:B,
+          color:'#fff',
+          border:'none',
+          borderRadius:6,
+          fontSize:14,
+          fontWeight:600,
+          cursor:'pointer',
+          fontFamily:'inherit',
+          transition:'all 0.15s',
+          boxShadow:'0 1px 2px rgba(0,0,0,0.05)'
+        }}>
+          {components[0]?.type==='subscription'?'Subscribe':components[0]?.type==='payg'?'Enable':components[0]?.type==='mfc'?'Contact sales':'Buy now'}
+        </button>
       </div>
 
-      {components.map((comp, i) => renderComponent(comp, i, components.length))}
-      {trial && (
-        <>
-          <Divider mt={16} mb={14}/>
-          <div style={{ padding:'10px 12px', background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:4, fontSize:12, color:'#166534', lineHeight:1.6 }}>
-            {trial.type==='timed' && `✓ ${trial.days}-day free trial — then ${trial.after==='bill'?'normal billing':'downgrade to free tier'}`}
-            {trial.type==='reverse' && `✓ ${trial.days}-day premium trial — auto-downgrades to ${activeOfferings.find(o=>o.id===trial.downgradeTo)?.name || trial.downgradeTo}`}
-            {trial.type==='cap' && `✓ Free up to $${trial.cap} of usage — then ${trial.after==='bill'?'normal billing':'service suspended'}`}
-          </div>
-        </>
+      {/* Draft component when adding new (shown as separate box below) */}
+      {draft && editIndex === null && (activeType || showPicker || showTrial) && (
+        <div style={{ marginTop: 16 }}>
+          <DraftPreviewBox draft={draft} />
+        </div>
       )}
-      <Divider mt={20} mb={20}/>
-      <button style={{
-        width:'100%',
-        padding:'12px 16px',
-        background:B,
-        color:'#fff',
-        border:'none',
-        borderRadius:6,
-        fontSize:14,
-        fontWeight:600,
-        cursor:'pointer',
-        fontFamily:'inherit',
-        transition:'all 0.15s',
-        boxShadow:'0 1px 2px rgba(0,0,0,0.05)'
-      }}>
-        {components[0]?.type==='subscription'?'Subscribe':components[0]?.type==='payg'?'Enable':components[0]?.type==='mfc'?'Contact sales':'Buy now'}
-      </button>
-    </div>
+    </>
   )
 }
 
@@ -1751,6 +2262,7 @@ export default function PricingPlayground() {
   const [sessionMutable, setSessionMutable] = useState([])
   const [editIndex, setEditIndex] = useState(null)
   const [editingComponent, setEditingComponent] = useState(null)
+  const [draftComponent, setDraftComponent] = useState(null) // Real-time preview of in-progress component
   const [showExamples, setShowExamples] = useState(null) // null | 'examples' | 'scratch'
   const [selectedExample, setSelectedExample] = useState(null)
   const formRef = useRef(null)
@@ -1773,6 +2285,11 @@ export default function PricingPlayground() {
       }, 100)
     }
   }, [isFree])
+
+  // Clear draft when strategy changes or is closed
+  useEffect(() => {
+    setDraftComponent(null)
+  }, [activeType])
 
   // Dummy metered resources organized by category
   const baseMeteredResources = [
@@ -1866,6 +2383,11 @@ export default function PricingPlayground() {
     setActiveType(null)
     setShowPicker(false)
     setEditingComponent(null)
+    setDraftComponent(null) // Clear draft when component is completed
+  }
+
+  const handleDraftChange = (partialConfig) => {
+    setDraftComponent(partialConfig)
   }
 
   const handleEdit = (i) => {
@@ -1879,11 +2401,11 @@ export default function PricingPlayground() {
   const isDone = (isFree && freeOptIn) || (components.length>0 && !activeType && !showPicker)
   const getInitialData = (type) => (editingComponent?.type === type ? editingComponent : null)
   const stratForms = {
-    subscription: <SubscriptionForm onDone={handleStratDone} allMetered={allMetered} allMutable={allMutable} onCreateMetered={n=>setSessionMetered(p=>[...p,n])} onCreateMutable={f=>setSessionMutable(p=>[...p,f])} initialData={getInitialData('subscription')}/>,
-    payg: <PAYGForm onDone={handleStratDone} allMetered={allMetered} onCreateMetered={n=>setSessionMetered(p=>[...p,n])} initialData={getInitialData('payg')}/>,
-    prepaid: <PrepaidForm onDone={handleStratDone} allMetered={allMetered} onCreateMetered={n=>setSessionMetered(p=>[...p,n])} initialData={getInitialData('prepaid')}/>,
-    onetime: <OneTimeForm onDone={handleStratDone} initialData={getInitialData('onetime')}/>,
-    mfc: <MFCForm onDone={handleStratDone} initialData={getInitialData('mfc')}/>,
+    subscription: <SubscriptionForm onDone={handleStratDone} onDraftChange={handleDraftChange} allMetered={allMetered} allMutable={allMutable} onCreateMetered={n=>setSessionMetered(p=>[...p,n])} onCreateMutable={f=>setSessionMutable(p=>[...p,f])} initialData={getInitialData('subscription')}/>,
+    payg: <PAYGForm onDone={handleStratDone} onDraftChange={handleDraftChange} allMetered={allMetered} onCreateMetered={n=>setSessionMetered(p=>[...p,n])} initialData={getInitialData('payg')}/>,
+    prepaid: <PrepaidForm onDone={handleStratDone} onDraftChange={handleDraftChange} allMetered={allMetered} onCreateMetered={n=>setSessionMetered(p=>[...p,n])} initialData={getInitialData('prepaid')}/>,
+    onetime: <OneTimeForm onDone={handleStratDone} onDraftChange={handleDraftChange} initialData={getInitialData('onetime')}/>,
+    mfc: <MFCForm onDone={handleStratDone} onDraftChange={handleDraftChange} initialData={getInitialData('mfc')}/>,
   }
 
   // Helper to reset configuration state (used when switching modes)
@@ -1903,6 +2425,7 @@ export default function PricingPlayground() {
     setSessionMutable([])
     setEditIndex(null)
     setEditingComponent(null)
+    setDraftComponent(null)
   }
 
   const handleReset = () => {
@@ -2029,7 +2552,7 @@ export default function PricingPlayground() {
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
               <SelCard
                 title="Base offering"
-                desc="A purchasable offering like Docker Team or Offload. You can attach add-ons to extend it."
+                desc="A purchasable offering like Docker Team. You can attach add-ons to extend it."
                 selected={offeringType==='base'}
                 onClick={()=>setOfferingType('base')}
               />
@@ -2290,7 +2813,7 @@ export default function PricingPlayground() {
             {showTrial && !trial && (
               <Fade key="trial">
                 <div style={{ fontSize:14, fontWeight:600, color:G900, marginBottom:16 }}>Free trial <span style={{ fontSize:12, fontWeight:400, color:G400 }}>(overlay)</span></div>
-                <TrialForm onDone={t=>{ setTrial(t); setShowTrial(false) }}/>
+                <TrialForm onDone={t=>{ setTrial(t); setShowTrial(false) }} onDraftChange={handleDraftChange}/>
               </Fade>
             )}
             {trial && (
@@ -2332,7 +2855,7 @@ export default function PricingPlayground() {
           <div style={{ fontSize:11, fontWeight:600, color:G500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>PREVIEW</div>
           <div style={{ fontSize:12, color:G400, lineHeight:1.6 }}>This is an example of how your pricing strategy might look.</div>
         </div>
-        <SummaryPanel offeringType={offeringType} compatibleWith={compatibleWith} customOfferings={customOfferings} offeringName={offeringName} isFree={isFree} freeOptIn={freeOptIn} components={components} trial={trial}/>
+        <SummaryPanel offeringType={offeringType} compatibleWith={compatibleWith} customOfferings={customOfferings} offeringName={offeringName} isFree={isFree} freeOptIn={freeOptIn} components={components} trial={trial} draftComponent={draftComponent} editIndex={editIndex} activeType={activeType} showPicker={showPicker} showTrial={showTrial}/>
       </div>
 
       {/* Sticky Reset Button */}
